@@ -1,11 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DSBusinessLogic = void 0;
-const libdsvdc_1 = require("./libdsvdc");
-class DSBusinessLogic extends libdsvdc_1.libdsvdc {
+class DSBusinessLogic {
     constructor(config) {
-        super(config);
-        this.on('binaryInputStateRequest', this.binaryInputStateRequest.bind(this));
+        config.events.on('binaryInputStateRequest', this.binaryInputStateRequest.bind(this));
     }
     binaryInputStateRequest() {
         console.log('TEEEEEEEESSST\n\n\n\n\n');

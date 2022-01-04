@@ -1,10 +1,11 @@
 import {libdsvdc} from './libdsvdc';
 
-export class DSBusinessLogic extends libdsvdc {
-  constructor(config: any) {
-    super(config);
-
-    this.on('binaryInputStateRequest', this.binaryInputStateRequest.bind(this));
+export class DSBusinessLogic {
+  constructor(config: {events: libdsvdc}) {
+    config.events.on(
+      'binaryInputStateRequest',
+      this.binaryInputStateRequest.bind(this)
+    );
   }
 
   private binaryInputStateRequest() {
