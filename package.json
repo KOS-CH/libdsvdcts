@@ -21,10 +21,10 @@
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "prepare": "yarn run compile",
-    "pretest": "yarn run compile",
-    "posttest": "yarn run lint",
-    "build": "yarn clean && tsc && yarn copy-files",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run lint",
+    "build": "npm run clean && tsc && npm run copy-files",
     "clean": "rm -rf ./dist",
     "copy-files": "cp -R ./src/lib/messages ./dist/lib/"
   }
