@@ -7,6 +7,7 @@ import {
   createSubElements,
   globalHelperItem,
 } from './messageMapping';
+import {isArray} from 'util';
 
 /**
  * Parses the vdsmGetProperty message to add values wherever it's known
@@ -93,7 +94,11 @@ export function _vdcResponseGetProperty(
         d.dSUID.toLowerCase() ==
         decodedMessage.vdsmRequestGetProperty.dSUID.toLowerCase()
     );
-    if (device) {
+    if (
+      device &&
+      decodedMessage.vdsmRequestGetProperty &&
+      decodedMessage.vdsmRequestGetProperty.query
+    ) {
       decodedMessage.vdsmRequestGetProperty.query.forEach((p: any) => {
         if (this.debug) console.log('Query', p);
         if (p.name == 'outputSettings') {
