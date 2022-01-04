@@ -79,7 +79,9 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
     else {
         const device = this.devices.find((d) => d.dSUID.toLowerCase() ==
             decodedMessage.vdsmRequestGetProperty.dSUID.toLowerCase());
-        if (device) {
+        if (device &&
+            decodedMessage.vdsmRequestGetProperty &&
+            decodedMessage.vdsmRequestGetProperty.query) {
             decodedMessage.vdsmRequestGetProperty.query.forEach((p) => {
                 if (this.debug)
                     console.log('Query', p);
