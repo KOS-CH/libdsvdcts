@@ -6,9 +6,17 @@ export class DSBusinessLogic {
       'binaryInputStateRequest',
       this.binaryInputStateRequest.bind(this)
     );
+    config.events.on(
+      'sensorStatesRequest',
+      this.sensorStatesRequest.bind(this)
+    );
   }
 
   private binaryInputStateRequest() {
     console.log('TEEEEEEEESSST\n\n\n\n\n');
+  }
+
+  private sensorStatesRequest() {
+    console.log('SEEEEEEEEEEEEEEEEEEEEENSOR\n\n\n\n');
   }
 }
