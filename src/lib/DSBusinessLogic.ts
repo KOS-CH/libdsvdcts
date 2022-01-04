@@ -1,11 +1,15 @@
 import {libdsvdc} from './libdsvdc';
+import {Type} from 'protobufjs';
 
 export class DSBusinessLogic {
   events: libdsvdc;
   devices: any;
-  constructor(config: {events: libdsvdc; devices: any}) {
+  vdsm: Type;
+
+  constructor(config: {events: libdsvdc; devices: any; vdsm: Type}) {
     this.events = config.events;
     this.devices = config.devices;
+    this.vdsm = config.vdsm;
     this.events.on(
       'binaryInputStateRequest',
       this.binaryInputStateRequest.bind(this)
@@ -39,12 +43,91 @@ export class DSBusinessLogic {
 
   private sensorStatesRequest() {
     console.log('SEEEEEEEEEEEEEEEEEEEEENSOR\n\n\n\n');
-    this.events.emitGetState('getState', 'blah.0', () => {
-      console.log('CAAALLLLBAAACK\n\n\n\n\n\n\n');
-    });
   }
 
-  private channelStatesRequest() {}
+  /**
+   * channelState request are used by Digitalstrom to query for the current state. It requires an answer to be sent over the VDC
+   * @param msg
+   * @private
+   */
+  private channelStatesRequest(msg: any) {
+    console.log(`received request for status ${JSON.stringify(msg)}`);
+
+    // search if the dsUID is known
+    if (msg && msg.dSUID) {
+      const affectedDevice = this.devices.find(
+        (d: any) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase()
+      );
+      console.log('FOUND DEVICE: ' + JSON.stringify(affectedDevice));
+
+      if (affectedDevice) {
+        // found a device -> lets see what states are required
+        const getStates: Array<{[key: string]: string}> = [];
+        if (msg && msg.names && msg.names.length > 0) {
+          msg.names.forEach((e: any) => {
+            // loop all names which are the values of interest
+            const updateStateId = Object.keys(
+              affectedDevice.watchStateIDs
+            ).find(key => affectedDevice.watchStateIDs[key] === e);
+            if (updateStateId) {
+              // found a state
+              let stateObj: {[key: string]: string} = {};
+              stateObj[e] = affectedDevice.watchStateIDs[e];
+              getStates.push(stateObj);
+            }
+          });
+        } else {
+          // names is empty -> sending state for device
+          let key;
+          let value;
+          for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
+            // loop all states
+            let stateObj: {[key: string]: string} = {};
+            stateObj[key as string] = value as string;
+            getStates.push(stateObj);
+          }
+        }
+        if (getStates && getStates.length > 0) {
+          // we have some states to process
+          const handleCallback = (stateObj: any) => {
+            if (stateObj) {
+              // we have a reply
+              console.log(JSON.stringify(stateObj));
+              const elements: Array<any> = [];
+              let key;
+              let value: any;
+              for ([key, value] of Object.entries(stateObj)) {
+                // loop all states
+                let valueObj: {[key: string]: any} = {};
+                console.log(
+                  '---------------\n\n\n\nTYPEOF VALUE: ',
+                  typeof value.val,
+                  '-----------------\n\n\n'
+                );
+                if (typeof value.val == 'boolean') {
+                  valueObj.vBool = value.val;
+                } else if (typeof value.val == 'number') {
+                  valueObj.vDouble = value.val;
+                }
+
+                elements.push({
+                  name: key as string,
+                  elements: [
+                    {name: 'age', value: {vDouble: 1}},
+                    {name: 'error', value: {vUint64: '0'}},
+                    {name: 'value', value: valueObj},
+                  ],
+                });
+              }
+              // send it to the VDC
+              this.sendComplexState(msg.messageId, elements);
+            }
+          };
+          this.events.emitGetState(getStates, handleCallback.bind(this));
+        }
+      }
+    }
+  }
 
   private vdsmNotificationCallScene() {}
 
@@ -123,5 +206,47 @@ export class DSBusinessLogic {
         });
       }
     }
+  }
+
+  private sendComplexState(messageId: number, rawSubElements: any) {
+    const properties = [];
+    /* const subElements = createSubElements({
+          name: rawSubElements.name,
+          elements: rawSubElements.elements,
+        }); */
+    if (rawSubElements instanceof Array) {
+      properties.push({
+        name: 'channelStates',
+        elements: rawSubElements,
+      });
+    } else {
+      properties.push({
+        name: 'channelStates',
+        elements: [rawSubElements],
+      });
+    }
+
+    console.log(
+      JSON.stringify({
+        type: 5,
+        messageId: messageId,
+        vdcResponseGetProperty: {properties},
+      })
+    );
+    const answerObj = this.vdsm.fromObject({
+      type: 5,
+      messageId: messageId,
+      vdcResponseGetProperty: {properties},
+    });
+    const answerBuf = this.vdsm.encode(answerObj).finish();
+    console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+    // conn.write(this._addHeaders(answerBuf));
+    /**
+     * @event messageSent - New message sent to VDSM
+     * @type {object}
+     * @property {object} Message Object
+     */
+    this.events.emitObject('vdcPushChannelStates', answerBuf);
+    this.events.emitObject('messageSent', this.vdsm.decode(answerBuf));
   }
 }

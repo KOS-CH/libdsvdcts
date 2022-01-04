@@ -308,7 +308,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
       });
     };
 
-    new DSBusinessLogic({events: this, devices: this.devices});
+    new DSBusinessLogic({events: this, devices: this.devices, vdsm: this.vdsm});
 
     const server = net.createServer();
     server.on('connection', handleConnection);
