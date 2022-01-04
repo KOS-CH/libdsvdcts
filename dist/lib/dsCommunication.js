@@ -168,9 +168,9 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     }
                 }
                 else if (p.name == 'buttonInputSettings') {
-                    if (Array.isArray(device.buttonInputSetting)) {
+                    if (Array.isArray(device.buttonInputSettings)) {
                         const biElements = [];
-                        device.buttonInputSetting.forEach((cdObj, i) => {
+                        device.buttonInputSettings.forEach((cdObj, i) => {
                             if (cdObj &&
                                 typeof cdObj === 'object' &&
                                 !Array.isArray(cdObj) &&

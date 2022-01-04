@@ -113,8 +113,8 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                                 if (decodedMessage.vdsmRequestSetProperty.properties[0].name ==
                                     'zoneID') {
                                     device.zoneID =
-                                        decodedMessage.vdsmRequestSetProperty.properties[0].value
-                                            .vUint64 || 65534;
+                                        decodedMessage.vdsmRequestSetProperty.properties[0].value.vUint64.toString() ||
+                                            65534;
                                     this.emitObject('deviceZoneChange', {
                                         request: decodedMessage.vdsmRequestSetProperty,
                                         devices: this.devices,
@@ -133,13 +133,13 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                                                     console.log(`Found parameter ${el.name} in object ${JSON.stringify(valueObj)} in device`);
                                                 if (valueObj) {
                                                     el.elements.forEach((ce) => {
-                                                        let value = null;
+                                                        let newValue = '';
                                                         Object.keys(ce.value).forEach(v => {
-                                                            value = ce.value[v];
+                                                            newValue = ce.value[v];
                                                         });
                                                         if (this.debug)
-                                                            console.log(`setting value ${value} on ${JSON.stringify(valueObj)} on parameter ${ce.name}`);
-                                                        valueObj[ce.name] = value;
+                                                            console.log(`setting value ${newValue} on ${JSON.stringify(valueObj)} on parameter ${ce.name}`);
+                                                        valueObj[ce.name] = newValue.toString();
                                                     });
                                                 }
                                             });
