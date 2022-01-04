@@ -97,7 +97,8 @@ export function _vdcResponseGetProperty(
     if (
       device &&
       decodedMessage.vdsmRequestGetProperty &&
-      decodedMessage.vdsmRequestGetProperty.query
+      decodedMessage.vdsmRequestGetProperty.query &&
+      Array.isArray(decodedMessage.vdsmRequestGetProperty.query)
     ) {
       decodedMessage.vdsmRequestGetProperty.query.forEach((p: any) => {
         if (this.debug) console.log('Query', p);

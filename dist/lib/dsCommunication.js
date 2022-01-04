@@ -81,7 +81,8 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
             decodedMessage.vdsmRequestGetProperty.dSUID.toLowerCase());
         if (device &&
             decodedMessage.vdsmRequestGetProperty &&
-            decodedMessage.vdsmRequestGetProperty.query) {
+            decodedMessage.vdsmRequestGetProperty.query &&
+            Array.isArray(decodedMessage.vdsmRequestGetProperty.query)) {
             decodedMessage.vdsmRequestGetProperty.query.forEach((p) => {
                 if (this.debug)
                     console.log('Query', p);
