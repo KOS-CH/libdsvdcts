@@ -175,8 +175,8 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                 'zoneID'
               ) {
                 device.zoneID =
-                  decodedMessage.vdsmRequestSetProperty.properties[0].value
-                    .vUint64 || 65534;
+                  decodedMessage.vdsmRequestSetProperty.properties[0].value.vUint64.toString() ||
+                  65534;
                 this.emitObject('deviceZoneChange', {
                   request: decodedMessage.vdsmRequestSetProperty,
                   devices: this.devices,
