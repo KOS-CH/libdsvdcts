@@ -45,7 +45,7 @@ export class DSBusinessLogic {
   private sensorStatesRequest(msg: any) {
     if (msg && msg.dSUID) {
       const affectedDevice = this.devices.find(
-        (d: any) => d.dsConfig.dSUID.toLowerCase() == msg.dSUID.toLowerCase()
+        (d: any) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase()
       );
 
       if (affectedDevice) {

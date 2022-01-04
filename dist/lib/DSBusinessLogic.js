@@ -20,7 +20,7 @@ class DSBusinessLogic {
     }
     sensorStatesRequest(msg) {
         if (msg && msg.dSUID) {
-            const affectedDevice = this.devices.find((d) => d.dsConfig.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
+            const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
             if (affectedDevice) {
                 const getStates = [];
                 let key;
