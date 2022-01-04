@@ -1,7 +1,7 @@
 {
   "name": "libdsvdcts",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "MIT",
   "devDependencies": {
     "@types/dnssd": "^0.4.2",
@@ -23,6 +23,9 @@
     "fix": "gts fix",
     "prepare": "yarn run compile",
     "pretest": "yarn run compile",
-    "posttest": "yarn run lint"
+    "posttest": "yarn run lint",
+    "build": "yarn clean && tsc && yarn copy-files",
+    "clean": "rm -rf ./dist",
+    "copy-files": "cp -R ./src/lib/messages ./dist/lib/"
   }
 }
