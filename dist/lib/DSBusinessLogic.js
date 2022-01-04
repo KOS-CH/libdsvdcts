@@ -32,7 +32,9 @@ class DSBusinessLogic {
             if (msg && msg.dSUID) {
                 msg.dSUID.forEach((id) => {
                     const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == id.toLowerCase());
-                    if (affectedDevice) {
+                    if (affectedDevice &&
+                        msg.name !== 'TemperatureOutside' &&
+                        msg.name !== 'BrightnessOutside') {
                         const updateStateId = Object.keys(affectedDevice.watchStateIDs).find(key => affectedDevice.watchStateIDs[key] === msg.channelId);
                         if (updateStateId) {
                             this.events.emitSetState(affectedDevice.watchStateIDs[updateStateId], msg.value, false, (error) => {

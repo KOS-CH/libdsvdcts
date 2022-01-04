@@ -65,7 +65,11 @@ export class DSBusinessLogic {
           const affectedDevice = this.devices.find(
             (d: any) => d.dSUID.toLowerCase() == id.toLowerCase()
           );
-          if (affectedDevice) {
+          if (
+            affectedDevice &&
+            msg.name !== 'TemperatureOutside' &&
+            msg.name !== 'BrightnessOutside'
+          ) {
             // found the device -> it's an update for the device
             // search for the channelID within the watch sates
             const updateStateId = Object.keys(
