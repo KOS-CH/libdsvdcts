@@ -27,6 +27,7 @@ class DSBusinessLogic {
     vdsmNotificationSaveScene() { }
     vdsmNotificationSetOutputChannelValue() { }
     vdsmNotificationSetControlValue(msg) {
+        console.log('CONTROLVALUE RECEIVED', JSON.stringify(msg));
         if (msg && msg.name) {
             if (msg && msg.dSUID) {
                 msg.dSUID.forEach((id) => {

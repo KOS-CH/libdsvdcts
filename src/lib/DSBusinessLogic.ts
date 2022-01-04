@@ -58,6 +58,7 @@ export class DSBusinessLogic {
    * @private
    */
   private vdsmNotificationSetControlValue(msg: any) {
+    console.log('CONTROLVALUE RECEIVED', JSON.stringify(msg));
     if (msg && msg.name) {
       if (msg && msg.dSUID) {
         msg.dSUID.forEach((id: string) => {
