@@ -6,7 +6,8 @@ export class DSEventEmitter extends EventEmitter {
   }
 
   emitSetState(id: string, value: any, ack: boolean, callback: Function) {
-    this.emit('setIOBState', id, value, ack, callback);
+    const event: string = 'setIOBState';
+    this.emit(event, id, value, ack, callback);
   }
 
   emitObject(event: string, obj = {}) {

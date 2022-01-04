@@ -37,12 +37,13 @@ class DSBusinessLogic {
                         if (updateStateId) {
                             this.events.emitSetState(affectedDevice.watchStateIDs[updateStateId], msg.value, false, (error) => {
                                 if (error) {
-                                    console.error(`Failed setting ${affectedDevice.watchStateIDs[updateStateId]} on device ${JSON.stringify(affectedDevice)} to value ${msg.value} with error ${error}`);
+                                    console.error(`Failed to set ${affectedDevice.watchStateIDs[updateStateId]} on device ${JSON.stringify(affectedDevice)} to value ${msg.value} with error ${error}`);
                                 }
                             });
                         }
                     }
                     else if (msg.name === 'TemperatureOutside') {
+                        console.log('SET STATE for TemperatureOutside');
                         this.events.emitSetState('DS-Devices.outdoorValues.temperature', msg.value, true, (error) => {
                             if (error)
                                 console.error(`Failed setting DS-Devices.outdoorValues.temperature to value ${msg.value} with error ${error}`);

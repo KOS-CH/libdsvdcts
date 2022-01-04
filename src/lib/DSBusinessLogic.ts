@@ -80,7 +80,7 @@ export class DSBusinessLogic {
                 (error: any) => {
                   if (error) {
                     console.error(
-                      `Failed setting ${
+                      `Failed to set ${
                         affectedDevice.watchStateIDs[updateStateId]
                       } on device ${JSON.stringify(affectedDevice)} to value ${
                         msg.value
@@ -91,6 +91,7 @@ export class DSBusinessLogic {
               );
             }
           } else if (msg.name === 'TemperatureOutside') {
+            console.log('SET STATE for TemperatureOutside');
             this.events.emitSetState(
               'DS-Devices.outdoorValues.temperature',
               msg.value,
