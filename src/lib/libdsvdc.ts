@@ -166,6 +166,8 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                 d.dSUID.toLowerCase() ==
                 decodedMessage.vdsmRequestSetProperty.dSUID.toLowerCase()
             );
+            if (this.debug)
+              console.log('DEVICE TO UPDATE FOUND', JSON.stringify(device));
             if (device) {
               // device found
               if (

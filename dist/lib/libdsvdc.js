@@ -107,6 +107,8 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                         else if (decodedMessage.type == 6) {
                             const device = this.devices.find((d) => d.dSUID.toLowerCase() ==
                                 decodedMessage.vdsmRequestSetProperty.dSUID.toLowerCase());
+                            if (this.debug)
+                                console.log('DEVICE TO UPDATE FOUND', JSON.stringify(device));
                             if (device) {
                                 if (decodedMessage.vdsmRequestSetProperty.properties[0].name ==
                                     'zoneID') {

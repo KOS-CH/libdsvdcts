@@ -1,9 +1,9 @@
 import {libdsvdc} from './libdsvdc';
 
 import {
-  sensorDescription,
+  sensorDescriptions,
   outputDescription,
-  outputSetting,
+  outputSettings,
   createSubElements,
   globalHelperItem,
 } from './messageMapping';
@@ -99,8 +99,8 @@ export function _vdcResponseGetProperty(
         if (p.name == 'outputSettings') {
           // outputSettings
           let elements: any = [];
-          if (device.outputSetting) {
-            device.outputSetting.forEach(
+          if (device.outputSettings) {
+            device.outputSettings.forEach(
               (desc: {[key: string]: string; value: any}) => {
                 // loop all keys of an object
                 elements = [];
@@ -108,12 +108,13 @@ export function _vdcResponseGetProperty(
                 for (const [key, value] of Object.entries(desc)) {
                   if (
                     key &&
-                    outputSetting.find((o: globalHelperItem) => o.name == key)
+                    outputSettings.find((o: globalHelperItem) => o.name == key)
                   ) {
                     if (
-                      outputSetting &&
-                      outputSetting.find((o: globalHelperItem) => o.name == key)
-                        ?.type == 'elements'
+                      outputSettings &&
+                      outputSettings.find(
+                        (o: globalHelperItem) => o.name == key
+                      )?.type == 'elements'
                     ) {
                       const subElements: any = [];
                       value.forEach((s: any) => {
@@ -130,7 +131,7 @@ export function _vdcResponseGetProperty(
                       });
                     } else {
                       const valObj: any = {};
-                      const keyObj = outputSetting.find(
+                      const keyObj = outputSettings.find(
                         (o: globalHelperItem) => o.name == key
                       );
                       const objKey: string = keyObj?.type as string;
@@ -173,7 +174,7 @@ export function _vdcResponseGetProperty(
                 for (const [key, value] of Object.entries(desc)) {
                   if (key && outputDescription.find(o => o.name == key)) {
                     const valObj: any = {};
-                    const keyObj = outputSetting.find(
+                    const keyObj = outputSettings.find(
                       (o: globalHelperItem) => o.name == key
                     );
                     const objKey: string = keyObj?.type as string;
@@ -238,9 +239,9 @@ export function _vdcResponseGetProperty(
           }
         } else if (p.name == 'buttonInputDescriptions') {
           // buttonInputSettings
-          if (Array.isArray(device.buttonInputDescription)) {
+          if (Array.isArray(device.buttonInputDescriptions)) {
             const biElements: any = [];
-            device.buttonInputDescription.forEach((cdObj: any, i: number) => {
+            device.buttonInputDescriptions.forEach((cdObj: any, i: number) => {
               if (
                 cdObj &&
                 typeof cdObj === 'object' &&
@@ -276,18 +277,18 @@ export function _vdcResponseGetProperty(
           // sensorDescriptions
           let elements = [];
           const sensorElements: any = [];
-          if (device.sensorDescription) {
+          if (device.sensorDescriptions) {
             // console.log("SENSOR DESCRIPTIONS", device.sensorDescription);
-            device.sensorDescription.forEach(
+            device.sensorDescriptions.forEach(
               (desc: {[key: string]: string; value: any}) => {
                 // console.log("PROCESSING OBJECT", JSON.stringify(desc));
                 // loop all keys of an object
                 elements = [];
 
                 for (const [key, value] of Object.entries(desc)) {
-                  if (key && sensorDescription.find(o => o.name == key)) {
+                  if (key && sensorDescriptions.find(o => o.name == key)) {
                     const valObj: any = {};
-                    const keyObj = outputSetting.find(
+                    const keyObj = outputSettings.find(
                       (o: globalHelperItem) => o.name == key
                     );
                     const objKey: string = keyObj?.type as string;
@@ -335,9 +336,9 @@ export function _vdcResponseGetProperty(
           });
         } else if (p.name == 'binaryInputDescriptions') {
           // binaryInputDescriptions
-          if (Array.isArray(device.binaryInputDescription)) {
+          if (Array.isArray(device.binaryInputDescriptions)) {
             const biElements: any = [];
-            device.binaryInputDescription.forEach((cdObj: any, i: number) => {
+            device.binaryInputDescriptions.forEach((cdObj: any, i: number) => {
               if (
                 cdObj &&
                 typeof cdObj === 'object' &&
@@ -371,9 +372,9 @@ export function _vdcResponseGetProperty(
           }
         } else if (p.name == 'binaryInputSettings') {
           // binaryInputDescriptions
-          if (Array.isArray(device.binaryInputSetting)) {
+          if (Array.isArray(device.binaryInputSettings)) {
             const biElements: any = [];
-            device.binaryInputSetting.forEach((cdObj: any, i: number) => {
+            device.binaryInputSettings.forEach((cdObj: any, i: number) => {
               if (
                 cdObj &&
                 typeof cdObj === 'object' &&
@@ -406,9 +407,9 @@ export function _vdcResponseGetProperty(
           }
         } else if (p.name == 'sensorSettings') {
           // binaryInputDescriptions
-          if (Array.isArray(device.sensorSetting)) {
+          if (Array.isArray(device.sensorSettings)) {
             const biElements: any = [];
-            device.sensorSetting.forEach((cdObj: any, i: number) => {
+            device.sensorSettings.forEach((cdObj: any, i: number) => {
               if (
                 cdObj &&
                 typeof cdObj === 'object' &&
@@ -466,8 +467,8 @@ export function _vdcResponseGetProperty(
           });
         } else if (p.name == 'channelDescriptions') {
           // channelDescriptions
-          if (Array.isArray(device.channelDescription)) {
-            device.channelDescription.forEach((cdObj: any) => {
+          if (Array.isArray(device.channelDescriptions)) {
+            device.channelDescriptions.forEach((cdObj: any) => {
               if (
                 cdObj &&
                 typeof cdObj === 'object' &&

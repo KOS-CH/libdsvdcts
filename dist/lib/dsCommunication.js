@@ -85,15 +85,15 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     console.log('Query', p);
                 if (p.name == 'outputSettings') {
                     let elements = [];
-                    if (device.outputSetting) {
-                        device.outputSetting.forEach((desc) => {
+                    if (device.outputSettings) {
+                        device.outputSettings.forEach((desc) => {
                             var _a;
                             elements = [];
                             for (const [key, value] of Object.entries(desc)) {
                                 if (key &&
-                                    messageMapping_1.outputSetting.find((o) => o.name == key)) {
-                                    if (messageMapping_1.outputSetting &&
-                                        ((_a = messageMapping_1.outputSetting.find((o) => o.name == key)) === null || _a === void 0 ? void 0 : _a.type) == 'elements') {
+                                    messageMapping_1.outputSettings.find((o) => o.name == key)) {
+                                    if (messageMapping_1.outputSettings &&
+                                        ((_a = messageMapping_1.outputSettings.find((o) => o.name == key)) === null || _a === void 0 ? void 0 : _a.type) == 'elements') {
                                         const subElements = [];
                                         value.forEach((s) => {
                                             subElements.push({
@@ -110,7 +110,7 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                     }
                                     else {
                                         const valObj = {};
-                                        const keyObj = messageMapping_1.outputSetting.find((o) => o.name == key);
+                                        const keyObj = messageMapping_1.outputSettings.find((o) => o.name == key);
                                         const objKey = keyObj === null || keyObj === void 0 ? void 0 : keyObj.type;
                                         valObj[objKey] = value;
                                         elements.push({
@@ -144,7 +144,7 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                             for (const [key, value] of Object.entries(desc)) {
                                 if (key && messageMapping_1.outputDescription.find(o => o.name == key)) {
                                     const valObj = {};
-                                    const keyObj = messageMapping_1.outputSetting.find((o) => o.name == key);
+                                    const keyObj = messageMapping_1.outputSettings.find((o) => o.name == key);
                                     const objKey = keyObj === null || keyObj === void 0 ? void 0 : keyObj.type;
                                     valObj[objKey] = value;
                                     elements.push({
@@ -199,9 +199,9 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     }
                 }
                 else if (p.name == 'buttonInputDescriptions') {
-                    if (Array.isArray(device.buttonInputDescription)) {
+                    if (Array.isArray(device.buttonInputDescriptions)) {
                         const biElements = [];
-                        device.buttonInputDescription.forEach((cdObj, i) => {
+                        device.buttonInputDescriptions.forEach((cdObj, i) => {
                             if (cdObj &&
                                 typeof cdObj === 'object' &&
                                 !Array.isArray(cdObj) &&
@@ -229,13 +229,13 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                 else if (p.name == 'sensorDescriptions') {
                     let elements = [];
                     const sensorElements = [];
-                    if (device.sensorDescription) {
-                        device.sensorDescription.forEach((desc) => {
+                    if (device.sensorDescriptions) {
+                        device.sensorDescriptions.forEach((desc) => {
                             elements = [];
                             for (const [key, value] of Object.entries(desc)) {
-                                if (key && messageMapping_1.sensorDescription.find(o => o.name == key)) {
+                                if (key && messageMapping_1.sensorDescriptions.find(o => o.name == key)) {
                                     const valObj = {};
-                                    const keyObj = messageMapping_1.outputSetting.find((o) => o.name == key);
+                                    const keyObj = messageMapping_1.outputSettings.find((o) => o.name == key);
                                     const objKey = keyObj === null || keyObj === void 0 ? void 0 : keyObj.type;
                                     valObj[objKey] = value;
                                     elements.push({
@@ -274,9 +274,9 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     });
                 }
                 else if (p.name == 'binaryInputDescriptions') {
-                    if (Array.isArray(device.binaryInputDescription)) {
+                    if (Array.isArray(device.binaryInputDescriptions)) {
                         const biElements = [];
-                        device.binaryInputDescription.forEach((cdObj, i) => {
+                        device.binaryInputDescriptions.forEach((cdObj, i) => {
                             if (cdObj &&
                                 typeof cdObj === 'object' &&
                                 !Array.isArray(cdObj) &&
@@ -306,9 +306,9 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     }
                 }
                 else if (p.name == 'binaryInputSettings') {
-                    if (Array.isArray(device.binaryInputSetting)) {
+                    if (Array.isArray(device.binaryInputSettings)) {
                         const biElements = [];
-                        device.binaryInputSetting.forEach((cdObj, i) => {
+                        device.binaryInputSettings.forEach((cdObj, i) => {
                             if (cdObj &&
                                 typeof cdObj === 'object' &&
                                 !Array.isArray(cdObj) &&
@@ -337,9 +337,9 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     }
                 }
                 else if (p.name == 'sensorSettings') {
-                    if (Array.isArray(device.sensorSetting)) {
+                    if (Array.isArray(device.sensorSettings)) {
                         const biElements = [];
-                        device.sensorSetting.forEach((cdObj, i) => {
+                        device.sensorSettings.forEach((cdObj, i) => {
                             if (cdObj &&
                                 typeof cdObj === 'object' &&
                                 !Array.isArray(cdObj) &&
@@ -393,8 +393,8 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     });
                 }
                 else if (p.name == 'channelDescriptions') {
-                    if (Array.isArray(device.channelDescription)) {
-                        device.channelDescription.forEach((cdObj) => {
+                    if (Array.isArray(device.channelDescriptions)) {
+                        device.channelDescriptions.forEach((cdObj) => {
                             if (cdObj &&
                                 typeof cdObj === 'object' &&
                                 !Array.isArray(cdObj) &&
