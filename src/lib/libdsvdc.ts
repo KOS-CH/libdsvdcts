@@ -205,7 +205,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                           );
                         if (valueObj) {
                           el.elements.forEach((ce: any) => {
-                            let newValue: string | null = null;
+                            let newValue: string = '';
                             Object.keys(ce.value).forEach(v => {
                               newValue = ce.value[v];
                             });
@@ -215,7 +215,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                                   valueObj
                                 )} on parameter ${ce.name}`
                               );
-                            valueObj[ce.name] = newValue as unknown as string;
+                            valueObj[ce.name] = newValue.toString();
                           });
                         }
                       });
