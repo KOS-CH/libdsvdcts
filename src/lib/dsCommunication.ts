@@ -7,7 +7,6 @@ import {
   createSubElements,
   globalHelperItem,
 } from './messageMapping';
-import {isArray} from 'util';
 
 /**
  * Parses the vdsmGetProperty message to add values wherever it's known
