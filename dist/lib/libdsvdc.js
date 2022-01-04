@@ -130,13 +130,15 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                                             p.elements.forEach((el) => {
                                                 const valueObj = device[p.name].find((o) => o.objName == el.name);
                                                 if (this.debug)
-                                                    console.log(`Found parameter object ${valueObj} in device`);
+                                                    console.log(`Found parameter ${el.name} in object ${JSON.stringify(valueObj)} in device`);
                                                 if (valueObj) {
                                                     el.elements.forEach((ce) => {
                                                         let value = null;
                                                         Object.keys(ce.value).forEach(v => {
                                                             value = ce.value[v];
                                                         });
+                                                        if (this.debug)
+                                                            console.log(`setting value ${value} on ${JSON.stringify(valueObj)} on parameter ${ce.name}`);
                                                         valueObj[ce.name] = value;
                                                     });
                                                 }

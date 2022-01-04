@@ -158,7 +158,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
             // send _vdcResponseGetProperty
             this._vdcResponseGetProperty(conn, decodedMessage);
           } else if (decodedMessage.type == 6) {
-            // VDSM_SETPROPERTY
+            // VDSM_REQUEST_SET_PROPERTY
             // TODO implement logic
             // search for device and store the zone there
             const device = this.devices.find(
@@ -199,7 +199,9 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                         );
                         if (this.debug)
                           console.log(
-                            `Found parameter object ${valueObj} in device`
+                            `Found parameter ${
+                              el.name
+                            } in object ${JSON.stringify(valueObj)} in device`
                           );
                         if (valueObj) {
                           el.elements.forEach((ce: any) => {
@@ -207,6 +209,12 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                             Object.keys(ce.value).forEach(v => {
                               value = ce.value[v];
                             });
+                            if (this.debug)
+                              console.log(
+                                `setting value ${value} on ${JSON.stringify(
+                                  valueObj
+                                )} on parameter ${ce.name}`
+                              );
                             valueObj[ce.name] = value;
                           });
                         }
