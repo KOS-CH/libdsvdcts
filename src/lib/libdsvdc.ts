@@ -181,29 +181,45 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                   request: decodedMessage.vdsmRequestSetProperty,
                   devices: this.devices,
                 });
-              } else if (
-                decodedMessage.vdsmRequestSetProperty.properties[0].name ==
-                'buttonInputSettings'
-              ) {
+              } else {
                 if (this.debug)
                   console.log('DEVICE BEFORE UPDATE', JSON.stringify(device));
-                decodedMessage.vdsmRequestSetProperty.properties[0].elements.forEach(
-                  (el: any) => {
-                    const idxArray = el.name.split('_');
-                    const valueObj = device.buttonInputSetting[idxArray[1]];
-                    if (idxArray && valueObj) {
-                      el.elements.forEach((ce: any) => {
-                        let value: string | null = null;
-                        Object.keys(ce.value).forEach(v => {
-                          value = ce.value[v];
-                        });
-                        valueObj[ce.name] = value;
+                decodedMessage.vdsmRequestSetProperty.properties.forEach(
+                  (p: any) => {
+                    if (device[p.name]) {
+                      if (this.debug)
+                        console.log(
+                          `found parameters ${
+                            p.name
+                          } to upgrade in ${JSON.stringify(device)}`
+                        );
+                      p.elements.forEach((el: any) => {
+                        const valueObj = device[p.name].find(
+                          (o: any) => o.objName == el.name
+                        );
+                        if (this.debug)
+                          console.log(
+                            `Found parameter object ${valueObj} in device`
+                          );
+                        if (valueObj) {
+                          el.elements.forEach((ce: any) => {
+                            let value: string | null = null;
+                            Object.keys(ce.value).forEach(v => {
+                              value = ce.value[v];
+                            });
+                            valueObj[ce.name] = value;
+                          });
+                        }
                       });
                     }
+                    if (this.debug)
+                      console.log(
+                        'DEVICE AFTER UPDATE',
+                        JSON.stringify(device)
+                      );
+                    this.emitObject('updateDeviceValues', device);
                   }
                 );
-                if (this.debug)
-                  console.log('DEVICE AFTER UPDATE', JSON.stringify(device));
               }
             }
             this._genericResponse(

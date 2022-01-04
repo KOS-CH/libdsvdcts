@@ -177,13 +177,13 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 cdObj !== null) {
                                 const subElements = (0, messageMapping_1.createSubElements)(cdObj);
                                 biElements.push({
-                                    name: `button_${i}`,
+                                    name: cdObj.objName,
                                     elements: subElements,
                                 });
                             }
                             else {
                                 properties.push({
-                                    name: `button_${i}`,
+                                    name: cdObj.objName,
                                 });
                             }
                         });
@@ -208,13 +208,13 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 cdObj !== null) {
                                 const subElements = (0, messageMapping_1.createSubElements)(cdObj);
                                 biElements.push({
-                                    name: `button_${i}`,
+                                    name: cdObj.objName,
                                     elements: subElements,
                                 });
                             }
                             else {
                                 properties.push({
-                                    name: `button_${i}`,
+                                    name: cdObj.objName,
                                 });
                             }
                         });
@@ -248,7 +248,7 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 }
                             }
                             sensorElements.push({
-                                name: desc.sensorName,
+                                name: desc.objName,
                                 elements: elements,
                             });
                         });
@@ -283,13 +283,13 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 cdObj !== null) {
                                 const subElements = (0, messageMapping_1.createSubElements)(cdObj);
                                 biElements.push({
-                                    name: cdObj.name,
+                                    name: cdObj.objName,
                                     elements: subElements,
                                 });
                             }
                             else {
                                 properties.push({
-                                    name: `generic`,
+                                    name: cdObj.objName,
                                 });
                             }
                         });
@@ -315,13 +315,13 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 cdObj !== null) {
                                 const subElements = (0, messageMapping_1.createSubElements)(cdObj);
                                 biElements.push({
-                                    name: cdObj.inputName,
+                                    name: cdObj.objName,
                                     elements: subElements,
                                 });
                             }
                             else {
                                 properties.push({
-                                    name: `generic`,
+                                    name: 'generic',
                                 });
                             }
                         });
@@ -346,7 +346,7 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 cdObj !== null) {
                                 const subElements = (0, messageMapping_1.createSubElements)(cdObj);
                                 biElements.push({
-                                    name: cdObj.sensorName,
+                                    name: cdObj.objName,
                                     elements: subElements,
                                 });
                             }

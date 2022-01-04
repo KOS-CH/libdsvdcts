@@ -218,13 +218,13 @@ export function _vdcResponseGetProperty(
 
                 biElements.push({
                   // name: `generic_${i}`,
-                  name: `button_${i}`,
+                  name: cdObj.objName,
                   elements: subElements,
                 });
               } else {
                 properties.push({
                   // name: `generic_${i}`,
-                  name: `button_${i}`,
+                  name: cdObj.objName,
                 });
               }
             });
@@ -252,13 +252,13 @@ export function _vdcResponseGetProperty(
 
                 biElements.push({
                   // name: `generic_${i}`,
-                  name: `button_${i}`,
+                  name: cdObj.objName,
                   elements: subElements,
                 });
               } else {
                 properties.push({
                   // name: `generic_${i}`,
-                  name: `button_${i}`,
+                  name: cdObj.objName,
                 });
               }
             });
@@ -306,7 +306,7 @@ export function _vdcResponseGetProperty(
                   }
                 }
                 sensorElements.push({
-                  name: desc.sensorName,
+                  name: desc.objName,
                   elements: elements,
                 });
               }
@@ -350,13 +350,13 @@ export function _vdcResponseGetProperty(
                 biElements.push({
                   // name: `generic_${i}`,
                   // name: `generic`,
-                  name: cdObj.name,
+                  name: cdObj.objName,
                   elements: subElements,
                 });
               } else {
                 properties.push({
                   // name: `generic_${i}`,
-                  name: `generic`,
+                  name: cdObj.objName,
                 });
               }
             });
@@ -386,13 +386,13 @@ export function _vdcResponseGetProperty(
                 biElements.push({
                   // name: `generic_${i}`,
                   // name: `generic`,
-                  name: cdObj.inputName,
+                  name: cdObj.objName,
                   elements: subElements,
                 });
               } else {
                 properties.push({
                   // name: `generic_${i}`,
-                  name: `generic`,
+                  name: 'generic',
                 });
               }
             });
@@ -421,7 +421,7 @@ export function _vdcResponseGetProperty(
                 biElements.push({
                   // name: `generic_${i}`,
                   // name: `generic`,
-                  name: cdObj.sensorName,
+                  name: cdObj.objName,
                   elements: subElements,
                 });
               } else {
