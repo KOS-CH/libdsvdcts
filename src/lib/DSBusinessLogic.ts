@@ -1,15 +1,14 @@
 import {libdsvdc} from './libdsvdc';
 
 export class DSBusinessLogic {
+  events: libdsvdc;
   constructor(config: {events: libdsvdc}) {
-    config.events.on(
+    this.events = config.events;
+    this.events.on(
       'binaryInputStateRequest',
       this.binaryInputStateRequest.bind(this)
     );
-    config.events.on(
-      'sensorStatesRequest',
-      this.sensorStatesRequest.bind(this)
-    );
+    this.events.on('sensorStatesRequest', this.sensorStatesRequest.bind(this));
   }
 
   private binaryInputStateRequest() {
@@ -18,5 +17,8 @@ export class DSBusinessLogic {
 
   private sensorStatesRequest() {
     console.log('SEEEEEEEEEEEEEEEEEEEEENSOR\n\n\n\n');
+    this.events.emitGetState('getState', 'blah.0', () => {
+      console.log('CAAALLLLBAAACK\n\n\n\n\n\n\n');
+    });
   }
 }
