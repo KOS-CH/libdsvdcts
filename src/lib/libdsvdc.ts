@@ -12,7 +12,8 @@ import {
     _vdcSendPong,
     _vdcSendPushProperty,
     _vdsmResponseHello,
-    _vdcSendAnnounceDevice
+    _vdcSendAnnounceDevice,
+    _vdcResponseGetProperty
 } from './dsCommunication'
 
 interface VDC {
@@ -53,6 +54,7 @@ export class libdsvdc extends DSEventEmitter implements VDC  {
     public _vdcSendPong = _vdcSendPong
     public _genericResponse = _genericResponse
     public _vdcSendAnnounceDevice = _vdcSendAnnounceDevice
+    public _vdcResponseGetProperty = _vdcResponseGetProperty
 
     constructor(config: dsVDCConfig) {
         super(config);
@@ -149,8 +151,7 @@ export class libdsvdc extends DSEventEmitter implements VDC  {
                     } else if (decodedMessage.type == 4) {
                         // VDSM_REQUESTGETPROPERTIES
                         // send _vdcResponseGetProperty
-                        // TODO add function externally
-                        // this._vdcResponseGetProperty(conn, decodedMessage);
+                        this._vdcResponseGetProperty(conn, decodedMessage);
                     } else if (decodedMessage.type == 6) {
                         // VDSM_SETPROPERTY
                         // TODO implement logic
