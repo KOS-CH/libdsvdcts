@@ -217,13 +217,13 @@ export function _vdcResponseGetProperty(
 
                 biElements.push({
                   // name: `generic_${i}`,
-                  name: `button`,
+                  name: `button_${i}`,
                   elements: subElements,
                 });
               } else {
                 properties.push({
                   // name: `generic_${i}`,
-                  name: `button`,
+                  name: `button_${i}`,
                 });
               }
             });
@@ -251,13 +251,13 @@ export function _vdcResponseGetProperty(
 
                 biElements.push({
                   // name: `generic_${i}`,
-                  name: `button`,
+                  name: `button_${i}`,
                   elements: subElements,
                 });
               } else {
                 properties.push({
                   // name: `generic_${i}`,
-                  name: `button`,
+                  name: `button_${i}`,
                 });
               }
             });

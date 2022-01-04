@@ -118,6 +118,26 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                                         devices: this.devices,
                                     });
                                 }
+                                else if (decodedMessage.vdsmRequestSetProperty.properties[0].name ==
+                                    'buttonInputSettings') {
+                                    if (this.debug)
+                                        console.log('DEVICE BEFORE UPDATE', JSON.stringify(device));
+                                    decodedMessage.vdsmRequestSetProperty.properties[0].elements.forEach((el) => {
+                                        const idxArray = el.name.split('_');
+                                        const valueObj = device.buttonInputSetting[idxArray[1]];
+                                        if (idxArray && valueObj) {
+                                            el.elements.forEach((ce) => {
+                                                let value = null;
+                                                Object.keys(ce.value).forEach(v => {
+                                                    value = ce.value[v];
+                                                });
+                                                valueObj[ce.name] = value;
+                                            });
+                                        }
+                                    });
+                                    if (this.debug)
+                                        console.log('DEVICE AFTER UPDATE', JSON.stringify(device));
+                                }
                             }
                             this._genericResponse(conn, { code: 0, description: 'OK' }, decodedMessage.messageId);
                         }

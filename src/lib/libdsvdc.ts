@@ -179,6 +179,29 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                   request: decodedMessage.vdsmRequestSetProperty,
                   devices: this.devices,
                 });
+              } else if (
+                decodedMessage.vdsmRequestSetProperty.properties[0].name ==
+                'buttonInputSettings'
+              ) {
+                if (this.debug)
+                  console.log('DEVICE BEFORE UPDATE', JSON.stringify(device));
+                decodedMessage.vdsmRequestSetProperty.properties[0].elements.forEach(
+                  (el: any) => {
+                    const idxArray = el.name.split('_');
+                    const valueObj = device.buttonInputSetting[idxArray[1]];
+                    if (idxArray && valueObj) {
+                      el.elements.forEach((ce: any) => {
+                        let value: string | null = null;
+                        Object.keys(ce.value).forEach(v => {
+                          value = ce.value[v];
+                        });
+                        valueObj[ce.name] = value;
+                      });
+                    }
+                  }
+                );
+                if (this.debug)
+                  console.log('DEVICE AFTER UPDATE', JSON.stringify(device));
               }
             }
             this._genericResponse(

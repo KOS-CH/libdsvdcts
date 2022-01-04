@@ -177,13 +177,13 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 cdObj !== null) {
                                 const subElements = (0, messageMapping_1.createSubElements)(cdObj);
                                 biElements.push({
-                                    name: `button`,
+                                    name: `button_${i}`,
                                     elements: subElements,
                                 });
                             }
                             else {
                                 properties.push({
-                                    name: `button`,
+                                    name: `button_${i}`,
                                 });
                             }
                         });
@@ -208,13 +208,13 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                 cdObj !== null) {
                                 const subElements = (0, messageMapping_1.createSubElements)(cdObj);
                                 biElements.push({
-                                    name: `button`,
+                                    name: `button_${i}`,
                                     elements: subElements,
                                 });
                             }
                             else {
                                 properties.push({
-                                    name: `button`,
+                                    name: `button_${i}`,
                                 });
                             }
                         });
