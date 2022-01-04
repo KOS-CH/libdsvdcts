@@ -36,6 +36,7 @@ const dnssd = __importStar(require("dnssd"));
 const path = __importStar(require("path"));
 const protobuf = __importStar(require("protobufjs"));
 const dsCommunication_1 = require("./dsCommunication");
+const messageMapping_1 = require("./messageMapping");
 class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
     constructor(config) {
         super(config);
@@ -46,6 +47,7 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
         this._vdcSendPong = dsCommunication_1._vdcSendPong;
         this._genericResponse = dsCommunication_1._genericResponse;
         this._vdcSendAnnounceDevice = dsCommunication_1._vdcSendAnnounceDevice;
+        this._vdcResponseGetProperty = dsCommunication_1._vdcResponseGetProperty;
         this.config = config;
         this.debug = config.debug;
         this.messageId = 0;
@@ -134,8 +136,7 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                         else if (decodedMessage.type == 4) {
                             // VDSM_REQUESTGETPROPERTIES
                             // send _vdcResponseGetProperty
-                            // TODO add function externally
-                            // this._vdcResponseGetProperty(conn, decodedMessage);
+                            this._vdcResponseGetProperty(conn, decodedMessage);
                         }
                         else if (decodedMessage.type == 6) {
                             // VDSM_SETPROPERTY
@@ -289,6 +290,192 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                 console.info(`Generic response with message ${errorMapping[code]} received`);
             }
         }
+    }
+    sendUpdate(dSUID, obj) {
+        this.emitObject("vdcSendPushProperty", { dSUID, obj });
+    }
+    sendState(stateValue, messageId) {
+        const properties = [];
+        const subElements = (0, messageMapping_1.createSubElements)({
+            0: { age: 1, value: stateValue },
+        });
+        properties.push({
+            name: "channelStates",
+            elements: subElements,
+        });
+        console.log(JSON.stringify({
+            type: 5,
+            messageId: messageId,
+            vdcResponseGetProperty: { properties },
+        }));
+        const answerObj = this.vdsm.fromObject({
+            type: 5,
+            messageId: messageId,
+            vdcResponseGetProperty: { properties },
+        });
+        const answerBuf = this.vdsm.encode(answerObj).finish();
+        if (this.debug)
+            console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+        // conn.write(this._addHeaders(answerBuf));
+        /**
+         * @event messageSent - New message sent to VDSM
+         * @type {object}
+         * @property Message Object
+         */
+        this.emitObject("vdcPushChannelStates", answerBuf);
+        this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+    }
+    sendComplexState(messageId, rawSubElements) {
+        const properties = [];
+        /* const subElements = createSubElements({
+          name: rawSubElements.name,
+          elements: rawSubElements.elements,
+        }); */
+        if (rawSubElements instanceof Array) {
+            properties.push({
+                name: "channelStates",
+                elements: rawSubElements,
+            });
+        }
+        else {
+            properties.push({
+                name: "channelStates",
+                elements: [rawSubElements],
+            });
+        }
+        console.log(JSON.stringify({
+            type: 5,
+            messageId: messageId,
+            vdcResponseGetProperty: { properties },
+        }));
+        const answerObj = this.vdsm.fromObject({
+            type: 5,
+            messageId: messageId,
+            vdcResponseGetProperty: { properties },
+        });
+        const answerBuf = this.vdsm.encode(answerObj).finish();
+        if (this.debug)
+            console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+        // conn.write(this._addHeaders(answerBuf));
+        /**
+         * @event messageSent - New message sent to VDSM
+         * @type {object}
+         * @property Message Object
+         */
+        this.emitObject("vdcPushChannelStates", answerBuf);
+        this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+    }
+    sendSensorStatesRequest(sensorStates, messageId) {
+        const properties = [];
+        const elements = [];
+        if (sensorStates && sensorStates.length > 0) {
+            sensorStates.forEach((i) => {
+                const subElements = (0, messageMapping_1.createSubElements)({
+                    age: i.age,
+                    error: 0,
+                    value_boolean: i.value,
+                    extendedValue: null,
+                });
+                elements.push({
+                    name: i.name,
+                    elements: subElements,
+                });
+            });
+            properties.push({
+                name: "channelStates",
+            });
+            properties.push({
+                name: "sensorStates",
+                elements: elements,
+            });
+            console.log(JSON.stringify({
+                type: 5,
+                messageId: messageId,
+                vdcResponseGetProperty: { properties },
+            }));
+            const answerObj = this.vdsm.fromObject({
+                type: 5,
+                messageId: messageId,
+                vdcResponseGetProperty: { properties },
+            });
+            const answerBuf = this.vdsm.encode(answerObj).finish();
+            if (this.debug)
+                console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+            // conn.write(this._addHeaders(answerBuf));
+            /**
+             * @event messageSent - New message sent to VDSM
+             * @type {object}
+             * @property Message Object
+             */
+            this.emitObject("vdcPushChannelStates", answerBuf);
+            this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+        }
+    }
+    sendBinaryInputState(inputStates, messageId) {
+        const properties = [];
+        const elements = [];
+        if (inputStates && inputStates.length > 0) {
+            inputStates.forEach((i) => {
+                const subElements = (0, messageMapping_1.createSubElements)({
+                    age: i.age,
+                    error: 0,
+                    value_boolean: i.value,
+                    extendedValue: null,
+                });
+                elements.push({
+                    name: i.name,
+                    elements: subElements,
+                });
+            });
+            properties.push({
+                name: "binaryInputStates",
+                elements: elements,
+            });
+            console.log(JSON.stringify({
+                type: 5,
+                messageId: messageId,
+                vdcResponseGetProperty: { properties },
+            }));
+            const answerObj = this.vdsm.fromObject({
+                type: 5,
+                messageId: messageId,
+                vdcResponseGetProperty: { properties },
+            });
+            const answerBuf = this.vdsm.encode(answerObj).finish();
+            if (this.debug)
+                console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+            // conn.write(this._addHeaders(answerBuf));
+            /**
+             * @event messageSent - New message sent to VDSM
+             * @type {object}
+             * @property Message Object
+             */
+            this.emitObject("vdcPushChannelStates", answerBuf);
+            this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+        }
+    }
+    sendVanish(dSUID) {
+        const properties = [];
+        this.messageId = this.messageId + 1;
+        properties.push({
+            dSUID: dSUID,
+        });
+        const answerObj = this.vdsm.fromObject({
+            type: 11,
+            messageId: this.messageId,
+            vdcSendVanish: { properties },
+        });
+        const answerBuf = this.vdsm.encode(answerObj).finish();
+        if (this.debug)
+            console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+        // conn.write(this._addHeaders(answerBuf));
+        /**
+         * @event messageSent - New message sent to VDSM
+         * @type {object}
+         * @property Message Object
+         */
+        this.emitObject("vdcPushChannelStates", answerBuf);
+        this.emitObject("messageSent", this.vdsm.decode(answerBuf));
     }
 }
 exports.libdsvdc = libdsvdc;
