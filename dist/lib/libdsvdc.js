@@ -51,36 +51,23 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
         this.config = config;
         this.debug = config.debug;
         this.messageId = 0;
-        this.messagePath = path.join(__dirname, "/messages/messages.proto");
+        this.messagePath = path.join(__dirname, '/messages/messages.proto');
         this.root = protobuf.loadSync(this.messagePath);
-        this.vdsm = this.root.lookupType("Message");
-        this.VERSION = "0.0.1";
-        this.MODEL = "ioBroker VDC";
-        this.VENDORNAME = "KYUKA";
-        setTimeout(() => {
-            this.emitGetState('test', 'blah.0.test', this._MyCallback.bind(this));
-        }, 5 * 1000);
+        this.vdsm = this.root.lookupType('Message');
+        this.VERSION = '0.0.1';
+        this.MODEL = 'ioBroker VDC';
+        this.VENDORNAME = 'KYUKA';
     }
-    _MyCallback(args) {
-        console.log(args);
-    }
-    /**
-     * Start a new instance of a VDC
-     * @param {Object} config
-     * @param {Array} devices
-     */
     start(config, devices = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!config.vdcDSUID || config.vdcDSUID.length != 34) {
-                // no vdcDSUID set -> exiting
-                return { error: 99, text: "vdcDSUID missing" };
+                return { error: 99, text: 'vdcDSUID missing' };
             }
             else {
                 this.config.vdcDSUID = config.vdcDSUID;
             }
             if (!config.vdcName || config.vdcName.length <= 0) {
-                // no name set -> existing
-                return { error: 99, text: "vdcName missing" };
+                return { error: 99, text: 'vdcName missing' };
             }
             else {
                 this.config.vdcName = config.vdcName;
@@ -88,102 +75,75 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
             if (!config.port) {
                 this.config.port = yield (0, libdsutil_1.getFreePort)();
                 if (this.debug)
-                    console.log("No port provided -> using %d", this.config.port);
+                    console.log('No port provided -> using %d', this.config.port);
             }
             else {
                 this.config.port = config.port;
             }
             this.devices = devices;
             const handleConnection = (conn) => {
-                var remoteAddress = conn.remoteAddress + ":" + conn.remotePort;
+                let remoteAddress = conn.remoteAddress + ':' + conn.remotePort;
                 if (this.debug)
-                    console.log("new client connection from %s", remoteAddress);
+                    console.log('new client connection from %s', remoteAddress);
                 const onConnData = (d) => {
                     if (this.debug)
-                        console.log("\n---------------------------\nconnection data from %s: %j", remoteAddress, d);
+                        console.log('\n---------------------------\nconnection data from %s: %j', remoteAddress, d);
                     try {
                         let decodedMessage;
                         decodedMessage = this.vdsm.decode(d.slice(2));
-                        /**
-                         * @event messageReceived - New message received from VDSM
-                         * @type {Object}
-                         * @property Message Object
-                         */
-                        this.emitObject("messageReceived", decodedMessage);
+                        this.emitObject('messageReceived', decodedMessage);
                         if (this.debug)
                             console.log(JSON.stringify(decodedMessage));
-                        let answerBuf = null;
                         if (decodedMessage.type == 2) {
-                            // VDSM_REQUEST_HELLO
-                            // send RESPONSE HELLO
                             this._vdsmResponseHello(conn, decodedMessage);
-                            // send vdcAnnounceVdc
                             this._vdcSendAnnounceVdc(conn);
-                            // send announcedevice for each device
-                            /* if (self.devices && self.devices.length > 0) {
-                              self.devices.forEach((dev) => {
-                                if (dev.dSUID && dev.dSUID.length > 0) {
-                                  self._vdcSendAnnounceDevice(conn, dev.dSUID);
-                                }
-                              });
-                            } */
                         }
                         else if (decodedMessage.type == 8) {
-                            // VDSM_SEND_PING
-                            // send VDC_SEND_PONG
                             this._vdcSendPong(conn, decodedMessage);
                         }
                         else if (decodedMessage.type == 4) {
-                            // VDSM_REQUESTGETPROPERTIES
-                            // send _vdcResponseGetProperty
                             this._vdcResponseGetProperty(conn, decodedMessage);
                         }
                         else if (decodedMessage.type == 6) {
-                            // VDSM_SETPROPERTY
-                            // TODO implement logic
-                            // search for device and store the zone there
                             const device = this.devices.find((d) => d.dSUID.toLowerCase() ==
                                 decodedMessage.vdsmRequestSetProperty.dSUID.toLowerCase());
                             if (device) {
-                                // device found
-                                device.zoneID =
-                                    decodedMessage.vdsmRequestSetProperty.properties[0].value
-                                        .vUint64 || 65534;
-                                this.emitObject("deviceZoneChange", {
-                                    request: decodedMessage.vdsmRequestSetProperty,
-                                    devices: this.devices,
-                                });
+                                if (decodedMessage.vdsmRequestSetProperty.properties[0].name ==
+                                    'zoneID') {
+                                    device.zoneID =
+                                        decodedMessage.vdsmRequestSetProperty.properties[0].value
+                                            .vUint64 || 65534;
+                                    this.emitObject('deviceZoneChange', {
+                                        request: decodedMessage.vdsmRequestSetProperty,
+                                        devices: this.devices,
+                                    });
+                                }
                             }
-                            this._genericResponse(conn, { code: 0, description: "OK" }, decodedMessage.messageId);
+                            this._genericResponse(conn, { code: 0, description: 'OK' }, decodedMessage.messageId);
                         }
                         else if (decodedMessage.type == 1) {
                             this._parseGenericResponse(decodedMessage);
                         }
                         else if (decodedMessage.type == 15) {
-                            // VDSM_NOTIFICATION_CALL_SCENE = 15;
                             if (decodedMessage.vdsmSendCallScene) {
-                                this.emitObject("VDSM_NOTIFICATION_CALL_SCENE", decodedMessage.vdsmSendCallScene);
+                                this.emitObject('VDSM_NOTIFICATION_CALL_SCENE', decodedMessage.vdsmSendCallScene);
                             }
                         }
                         else if (decodedMessage.type == 16) {
-                            // VDSM_NOTIFICATION_SAVE_SCENE = 16;
                             if (decodedMessage.vdsmSendSaveScene) {
-                                this.emitObject("VDSM_NOTIFICATION_SAVE_SCENE", decodedMessage.vdsmSendSaveScene);
+                                this.emitObject('VDSM_NOTIFICATION_SAVE_SCENE', decodedMessage.vdsmSendSaveScene);
                             }
                         }
                         else if (decodedMessage.type == 17) {
-                            // VDSM_NOTIFICATION_UNDO_SCENE = 17;
                         }
                         else if (decodedMessage.type == 21) {
-                            // VDSM_NOTIFICATION_SET_CONTROL_VALUE
                             if (decodedMessage.vdsmSendSetControlValue) {
-                                this.emitObject("VDSM_NOTIFICATION_SET_CONTROL_VALUE", decodedMessage.vdsmSendSetControlValue);
+                                this.emitObject('VDSM_NOTIFICATION_SET_CONTROL_VALUE', decodedMessage.vdsmSendSetControlValue);
                             }
                         }
                         else if (decodedMessage.type == 25) {
-                            // VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE
                             if (decodedMessage.vdsmSendOutputChannelValue) {
-                                this.emitObject("VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE", decodedMessage.vdsmSendOutputChannelValue);
+                                this.emitObject('VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE', decodedMessage.vdsmSendOutputChannelValue);
                             }
                         }
                     }
@@ -193,22 +153,22 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                 };
                 const onConnClose = () => {
                     if (this.debug)
-                        console.log("connection from %s closed", remoteAddress);
+                        console.log('connection from %s closed', remoteAddress);
                 };
                 const onConnError = (err) => {
                     if (this.debug)
-                        console.log("Connection %s error: %s", remoteAddress, err.message);
+                        console.log('Connection %s error: %s', remoteAddress, err.message);
                 };
-                conn.on("data", onConnData);
-                conn.once("close", onConnClose);
-                conn.on("error", onConnError);
-                this.on("vdcSendPushProperty", (message) => {
+                conn.on('data', onConnData);
+                conn.once('close', onConnClose);
+                conn.on('error', onConnError);
+                this.on('vdcSendPushProperty', message => {
                     this._vdcSendPushProperty(conn, message);
                 });
-                this.on("vdcPushChannelStates", (answerBuf) => {
+                this.on('vdcPushChannelStates', answerBuf => {
                     this._vdcPushChannelStates(conn, answerBuf);
                 });
-                this.on("vdcAnnounceDevices", () => {
+                this.on('vdcAnnounceDevices', () => {
                     if (this.devices && this.devices.length > 0) {
                         this.devices.forEach((dev) => {
                             if (dev.dSUID && dev.dSUID.length > 0) {
@@ -219,25 +179,24 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                 });
             };
             const server = net.createServer();
-            server.on("connection", handleConnection);
+            server.on('connection', handleConnection);
             server.listen({ port: this.config.port }, () => {
                 if (this.debug)
-                    console.log("server listening to %j", server.address());
+                    console.log('server listening to %j', server.address());
             });
-            // advertise server
             this._initDNSSD();
             setImmediate(() => {
-                /**
-                 * @event vdcRunningState - Sent when the VDC is fully initialized
-                 */
-                this.emitObject("vdcRunningState", { running: true });
+                this.emitObject('vdcRunningState', { running: true });
             });
             console.log(`VDC initialized on port ${this.config.port} and running`);
-            return { error: 0, text: `VDC initialized on port ${this.config.port} and running` };
+            return {
+                error: 0,
+                text: `VDC initialized on port ${this.config.port} and running`,
+            };
         });
     }
     _initDNSSD() {
-        const serviceType = new dnssd.ServiceType("_ds-vdc._tcp");
+        const serviceType = new dnssd.ServiceType('_ds-vdc._tcp');
         if (this.debug)
             console.log(serviceType);
         const ad = new dnssd.Advertisement(serviceType, this.config.port, {
@@ -245,42 +204,38 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
             txt: { dSUID: this.config.vdcDSUID },
         });
         ad.start()
-            .on("error", (err) => {
+            .on('error', err => {
             if (this.debug)
-                console.log("Error:", err);
+                console.log('Error:', err);
         })
-            .on("stopped", (stop) => {
+            .on('stopped', stop => {
             if (this.debug)
-                console.log("Stopped", stop);
+                console.log('Stopped', stop);
         })
-            .on("instanceRenamed", (instanceRenamed) => {
+            .on('instanceRenamed', instanceRenamed => {
             if (this.debug)
-                console.log("instanceRenamed", instanceRenamed);
+                console.log('instanceRenamed', instanceRenamed);
         })
-            .on("hostRenamed", (hostRenamed) => {
+            .on('hostRenamed', hostRenamed => {
             if (this.debug)
-                console.log("hostRenamed", hostRenamed);
+                console.log('hostRenamed', hostRenamed);
         });
     }
-    /**
-     * Parse genericResponse to show errors
-     * @param {Object} decodedMessage
-     */
     _parseGenericResponse(decodedMessage) {
         const errorMapping = {
-            ERR_OK: "Everything alright",
-            ERR_MESSAGE_UNKNOWN: "The message id is unknown. This might happen due to incomplete or incompatible implementation",
-            ERR_INCOMPATIBLE_API: "The API version of the VDSM is not compatible with this VDC.",
-            ERR_SERVICE_NOT_AVAILABLE: "The VDC cannot respond. Might happen bcause the VDC is already connected to another VDSM.",
-            ERR_INSUFFICIENT_STORAGE: "The VDC could not store the related data.",
-            ERR_FORBIDDEN: "ERR_FORBIDDEN 5 The call is not allowed.",
-            ERR_NOT_IMPLEMENTED: "Not (yet) implemented.",
-            ERR_NO_CONTENT_FOR_ARRAY: "Array data was expected.",
-            ERR_INVALID_VALUE_TYPE: "Invalid data type",
-            ERR_MISSING_SUBMESSAGE: "Submessge was expected.",
-            ERR_MISSING_DATA: "Additional data was exptected.",
-            ERR_NOT_FOUND: "Addredded entity or object was not found.",
-            ERR_NOT_AUTHORIZED: "The caller is not authorized with the Native Device",
+            ERR_OK: 'Everything alright',
+            ERR_MESSAGE_UNKNOWN: 'The message id is unknown. This might happen due to incomplete or incompatible implementation',
+            ERR_INCOMPATIBLE_API: 'The API version of the VDSM is not compatible with this VDC.',
+            ERR_SERVICE_NOT_AVAILABLE: 'The VDC cannot respond. Might happen bcause the VDC is already connected to another VDSM.',
+            ERR_INSUFFICIENT_STORAGE: 'The VDC could not store the related data.',
+            ERR_FORBIDDEN: 'ERR_FORBIDDEN 5 The call is not allowed.',
+            ERR_NOT_IMPLEMENTED: 'Not (yet) implemented.',
+            ERR_NO_CONTENT_FOR_ARRAY: 'Array data was expected.',
+            ERR_INVALID_VALUE_TYPE: 'Invalid data type',
+            ERR_MISSING_SUBMESSAGE: 'Submessge was expected.',
+            ERR_MISSING_DATA: 'Additional data was exptected.',
+            ERR_NOT_FOUND: 'Addredded entity or object was not found.',
+            ERR_NOT_AUTHORIZED: 'The caller is not authorized with the Native Device',
         };
         if (decodedMessage &&
             decodedMessage.genericResponse &&
@@ -292,7 +247,7 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
         }
     }
     sendUpdate(dSUID, obj) {
-        this.emitObject("vdcSendPushProperty", { dSUID, obj });
+        this.emitObject('vdcSendPushProperty', { dSUID, obj });
     }
     sendState(stateValue, messageId) {
         const properties = [];
@@ -300,7 +255,7 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
             0: { age: 1, value: stateValue },
         });
         properties.push({
-            name: "channelStates",
+            name: 'channelStates',
             elements: subElements,
         });
         console.log(JSON.stringify({
@@ -316,30 +271,20 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
         const answerBuf = this.vdsm.encode(answerObj).finish();
         if (this.debug)
             console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
-        // conn.write(this._addHeaders(answerBuf));
-        /**
-         * @event messageSent - New message sent to VDSM
-         * @type {object}
-         * @property Message Object
-         */
-        this.emitObject("vdcPushChannelStates", answerBuf);
-        this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+        this.emitObject('vdcPushChannelStates', answerBuf);
+        this.emitObject('messageSent', this.vdsm.decode(answerBuf));
     }
     sendComplexState(messageId, rawSubElements) {
         const properties = [];
-        /* const subElements = createSubElements({
-          name: rawSubElements.name,
-          elements: rawSubElements.elements,
-        }); */
         if (rawSubElements instanceof Array) {
             properties.push({
-                name: "channelStates",
+                name: 'channelStates',
                 elements: rawSubElements,
             });
         }
         else {
             properties.push({
-                name: "channelStates",
+                name: 'channelStates',
                 elements: [rawSubElements],
             });
         }
@@ -356,14 +301,8 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
         const answerBuf = this.vdsm.encode(answerObj).finish();
         if (this.debug)
             console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
-        // conn.write(this._addHeaders(answerBuf));
-        /**
-         * @event messageSent - New message sent to VDSM
-         * @type {object}
-         * @property Message Object
-         */
-        this.emitObject("vdcPushChannelStates", answerBuf);
-        this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+        this.emitObject('vdcPushChannelStates', answerBuf);
+        this.emitObject('messageSent', this.vdsm.decode(answerBuf));
     }
     sendSensorStatesRequest(sensorStates, messageId) {
         const properties = [];
@@ -382,10 +321,10 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                 });
             });
             properties.push({
-                name: "channelStates",
+                name: 'channelStates',
             });
             properties.push({
-                name: "sensorStates",
+                name: 'sensorStates',
                 elements: elements,
             });
             console.log(JSON.stringify({
@@ -401,14 +340,8 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
             const answerBuf = this.vdsm.encode(answerObj).finish();
             if (this.debug)
                 console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
-            // conn.write(this._addHeaders(answerBuf));
-            /**
-             * @event messageSent - New message sent to VDSM
-             * @type {object}
-             * @property Message Object
-             */
-            this.emitObject("vdcPushChannelStates", answerBuf);
-            this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+            this.emitObject('vdcPushChannelStates', answerBuf);
+            this.emitObject('messageSent', this.vdsm.decode(answerBuf));
         }
     }
     sendBinaryInputState(inputStates, messageId) {
@@ -428,7 +361,7 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                 });
             });
             properties.push({
-                name: "binaryInputStates",
+                name: 'binaryInputStates',
                 elements: elements,
             });
             console.log(JSON.stringify({
@@ -444,14 +377,8 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
             const answerBuf = this.vdsm.encode(answerObj).finish();
             if (this.debug)
                 console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
-            // conn.write(this._addHeaders(answerBuf));
-            /**
-             * @event messageSent - New message sent to VDSM
-             * @type {object}
-             * @property Message Object
-             */
-            this.emitObject("vdcPushChannelStates", answerBuf);
-            this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+            this.emitObject('vdcPushChannelStates', answerBuf);
+            this.emitObject('messageSent', this.vdsm.decode(answerBuf));
         }
     }
     sendVanish(dSUID) {
@@ -468,14 +395,8 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
         const answerBuf = this.vdsm.encode(answerObj).finish();
         if (this.debug)
             console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
-        // conn.write(this._addHeaders(answerBuf));
-        /**
-         * @event messageSent - New message sent to VDSM
-         * @type {object}
-         * @property Message Object
-         */
-        this.emitObject("vdcPushChannelStates", answerBuf);
-        this.emitObject("messageSent", this.vdsm.decode(answerBuf));
+        this.emitObject('vdcPushChannelStates', answerBuf);
+        this.emitObject('messageSent', this.vdsm.decode(answerBuf));
     }
 }
 exports.libdsvdc = libdsvdc;

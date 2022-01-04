@@ -342,10 +342,8 @@ function lookupType(key, value) {
         }
         else if (value == "") {
             type = valObj;
-            // type = valObj;
         }
         else {
-            // do nothing
         }
     }
     return type;
@@ -359,7 +357,6 @@ function createSubElements(obj) {
             typeof value === "object" &&
             !Array.isArray(value) &&
             value !== null) {
-            // we have an array as a value -> recursive it
             const deepElements = [];
             deepElements.push(createSubElements(value));
             subElements.push({

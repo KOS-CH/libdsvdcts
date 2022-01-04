@@ -1,7 +1,4 @@
 "use strict";
-/**
- * Helper class with useful function to operate a VDC
- */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -33,22 +30,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFreePort = exports.getDSUID = void 0;
 const findFreePort = __importStar(require("find-free-port"));
-/**
- * Generates a 34 byte dSUID
- * @returns dSUID
- */
 function getDSUID() {
     const genRanHex = (size) => [...Array(size)]
         .map(() => Math.floor(Math.random() * 16).toString(16))
-        .join("");
+        .join('');
     return genRanHex(34);
 }
 exports.getDSUID = getDSUID;
-/**
- * Searches for free ports between 40000 and 50000 to use as the port for the VDC
- * @async
- * @returns port
- */
 function getFreePort() {
     return __awaiter(this, void 0, void 0, function* () {
         const getFP = function () {
