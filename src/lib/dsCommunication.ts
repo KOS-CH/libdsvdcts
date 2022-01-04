@@ -180,7 +180,7 @@ export function _vdcResponseGetProperty(
                 for (const [key, value] of Object.entries(desc)) {
                   if (key && outputDescription.find(o => o.name == key)) {
                     const valObj: any = {};
-                    const keyObj = outputSettings.find(
+                    const keyObj = outputDescription.find(
                       (o: globalHelperItem) => o.name == key
                     );
                     const objKey: string = keyObj?.type as string;
@@ -287,14 +287,14 @@ export function _vdcResponseGetProperty(
             // console.log("SENSOR DESCRIPTIONS", device.sensorDescription);
             device.sensorDescriptions.forEach(
               (desc: {[key: string]: string; value: any}) => {
-                // console.log("PROCESSING OBJECT", JSON.stringify(desc));
+                console.log('PROCESSING OBJECT', JSON.stringify(desc));
                 // loop all keys of an object
                 elements = [];
 
                 for (const [key, value] of Object.entries(desc)) {
                   if (key && sensorDescriptions.find(o => o.name == key)) {
                     const valObj: any = {};
-                    const keyObj = outputSettings.find(
+                    const keyObj = sensorDescriptions.find(
                       (o: globalHelperItem) => o.name == key
                     );
                     const objKey: string = keyObj?.type as string;

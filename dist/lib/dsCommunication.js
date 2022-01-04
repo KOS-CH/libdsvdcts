@@ -147,7 +147,7 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                             for (const [key, value] of Object.entries(desc)) {
                                 if (key && messageMapping_1.outputDescription.find(o => o.name == key)) {
                                     const valObj = {};
-                                    const keyObj = messageMapping_1.outputSettings.find((o) => o.name == key);
+                                    const keyObj = messageMapping_1.outputDescription.find((o) => o.name == key);
                                     const objKey = keyObj === null || keyObj === void 0 ? void 0 : keyObj.type;
                                     valObj[objKey] = value;
                                     elements.push({
@@ -234,11 +234,12 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                     const sensorElements = [];
                     if (device.sensorDescriptions) {
                         device.sensorDescriptions.forEach((desc) => {
+                            console.log('PROCESSING OBJECT', JSON.stringify(desc));
                             elements = [];
                             for (const [key, value] of Object.entries(desc)) {
                                 if (key && messageMapping_1.sensorDescriptions.find(o => o.name == key)) {
                                     const valObj = {};
-                                    const keyObj = messageMapping_1.outputSettings.find((o) => o.name == key);
+                                    const keyObj = messageMapping_1.sensorDescriptions.find((o) => o.name == key);
                                     const objKey = keyObj === null || keyObj === void 0 ? void 0 : keyObj.type;
                                     valObj[objKey] = value;
                                     elements.push({
