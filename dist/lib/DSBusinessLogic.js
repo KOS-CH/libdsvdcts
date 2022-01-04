@@ -5,6 +5,7 @@ class DSBusinessLogic {
     constructor(config) {
         this.events = config.events;
         this.devices = config.devices;
+        this.vdsm = config.vdsm;
         this.events.on('binaryInputStateRequest', this.binaryInputStateRequest.bind(this));
         this.events.on('sensorStatesRequest', this.sensorStatesRequest.bind(this));
         this.events.on('VDSM_NOTIFICATION_SET_CONTROL_VALUE', this.vdsmNotificationSetControlValue.bind(this));
@@ -18,11 +19,66 @@ class DSBusinessLogic {
     }
     sensorStatesRequest() {
         console.log('SEEEEEEEEEEEEEEEEEEEEENSOR\n\n\n\n');
-        this.events.emitGetState('getState', 'blah.0', () => {
-            console.log('CAAALLLLBAAACK\n\n\n\n\n\n\n');
-        });
     }
-    channelStatesRequest() { }
+    channelStatesRequest(msg) {
+        console.log(`received request for status ${JSON.stringify(msg)}`);
+        if (msg && msg.dSUID) {
+            const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
+            console.log('FOUND DEVICE: ' + JSON.stringify(affectedDevice));
+            if (affectedDevice) {
+                const getStates = [];
+                if (msg && msg.names && msg.names.length > 0) {
+                    msg.names.forEach((e) => {
+                        const updateStateId = Object.keys(affectedDevice.watchStateIDs).find(key => affectedDevice.watchStateIDs[key] === e);
+                        if (updateStateId) {
+                            let stateObj = {};
+                            stateObj[e] = affectedDevice.watchStateIDs[e];
+                            getStates.push(stateObj);
+                        }
+                    });
+                }
+                else {
+                    let key;
+                    let value;
+                    for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
+                        let stateObj = {};
+                        stateObj[key] = value;
+                        getStates.push(stateObj);
+                    }
+                }
+                if (getStates && getStates.length > 0) {
+                    const handleCallback = (stateObj) => {
+                        if (stateObj) {
+                            console.log(JSON.stringify(stateObj));
+                            const elements = [];
+                            let key;
+                            let value;
+                            for ([key, value] of Object.entries(stateObj)) {
+                                let valueObj = {};
+                                console.log('---------------\n\n\n\nTYPEOF VALUE: ', typeof value.val, '-----------------\n\n\n');
+                                if (typeof value.val == 'boolean') {
+                                    valueObj.vBool = value.val;
+                                }
+                                else if (typeof value.val == 'number') {
+                                    valueObj.vDouble = value.val;
+                                }
+                                elements.push({
+                                    name: key,
+                                    elements: [
+                                        { name: 'age', value: { vDouble: 1 } },
+                                        { name: 'error', value: { vUint64: '0' } },
+                                        { name: 'value', value: valueObj },
+                                    ],
+                                });
+                            }
+                            this.sendComplexState(msg.messageId, elements);
+                        }
+                    };
+                    this.events.emitGetState(getStates, handleCallback.bind(this));
+                }
+            }
+        }
+    }
     vdsmNotificationCallScene() { }
     vdsmNotificationSaveScene() { }
     vdsmNotificationSetOutputChannelValue() { }
@@ -60,6 +116,35 @@ class DSBusinessLogic {
                 });
             }
         }
+    }
+    sendComplexState(messageId, rawSubElements) {
+        const properties = [];
+        if (rawSubElements instanceof Array) {
+            properties.push({
+                name: 'channelStates',
+                elements: rawSubElements,
+            });
+        }
+        else {
+            properties.push({
+                name: 'channelStates',
+                elements: [rawSubElements],
+            });
+        }
+        console.log(JSON.stringify({
+            type: 5,
+            messageId: messageId,
+            vdcResponseGetProperty: { properties },
+        }));
+        const answerObj = this.vdsm.fromObject({
+            type: 5,
+            messageId: messageId,
+            vdcResponseGetProperty: { properties },
+        });
+        const answerBuf = this.vdsm.encode(answerObj).finish();
+        console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+        this.events.emitObject('vdcPushChannelStates', answerBuf);
+        this.events.emitObject('messageSent', this.vdsm.decode(answerBuf));
     }
 }
 exports.DSBusinessLogic = DSBusinessLogic;

@@ -210,7 +210,7 @@ class libdsvdc extends DSEventEmitter_1.DSEventEmitter {
                     }
                 });
             };
-            new DSBusinessLogic_1.DSBusinessLogic({ events: this, devices: this.devices });
+            new DSBusinessLogic_1.DSBusinessLogic({ events: this, devices: this.devices, vdsm: this.vdsm });
             const server = net.createServer();
             server.on('connection', handleConnection);
             server.listen({ port: this.config.port }, () => {

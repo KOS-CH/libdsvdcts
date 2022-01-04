@@ -3,7 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DSEventEmitter = void 0;
 const events_1 = require("events");
 class DSEventEmitter extends events_1.EventEmitter {
-    emitGetState(event, id, callback) {
+    emitGetState(id, callback) {
+        const event = 'getIOBState';
         this.emit(event, id, callback);
     }
     emitSetState(id, value, ack, callback) {
