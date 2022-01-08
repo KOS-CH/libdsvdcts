@@ -188,7 +188,7 @@ export class DSBusinessLogic {
         'FOUND DEVICE: ' + JSON.stringify(affectedDevice)
       );
 
-      if (affectedDevice && affectedDevice.channelDescriptions) {
+      if (affectedDevice) {
         // found a device -> lets see what states are required
         const getStates: Array<{[key: string]: string}> = [];
         if (msg && msg.names && msg.names.length > 0) {
@@ -297,6 +297,8 @@ export class DSBusinessLogic {
           };
           this.events.emitGetState(getStates, handleCallback.bind(this));
         }
+      } else {
+        // send back empty state
       }
     }
   }
