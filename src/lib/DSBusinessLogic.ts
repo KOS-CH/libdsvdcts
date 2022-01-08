@@ -199,7 +199,7 @@ export class DSBusinessLogic {
                 'debug',
                 `channelStates stateObj: ${JSON.stringify(stateObj)}`
               );
-              const elements: Array<any> = [];
+              let elements: Array<any> = [];
               let key;
               let value: any;
               for ([key, value] of Object.entries(stateObj)) {
@@ -236,14 +236,19 @@ export class DSBusinessLogic {
                   );
                   if (value.val) {
                     // switch is set to true -> the value is 100
-                    valueObj.vDouble = 100;
+                    value.val = 100;
                   } else {
                     // switch is set to false -> the value is 0
-                    valueObj.vDouble = 0;
+                    value.val = 0;
                   }
-                  elements.push({name: 'age', value: {vDouble: 1}});
+
+                  const subElements = createSubElements({
+                    0: {age: 1, value: value.val},
+                  });
+                  /*elements.push({name: 'age', value: {vDouble: 1}});
                   elements.push({name: 'error', value: {vUint64: '0'}});
-                  elements.push({name: 'value', value: valueObj});
+                  elements.push({name: 'value', value: valueObj});*/
+                  elements = subElements;
 
                   this.events.log(
                     'debug',
