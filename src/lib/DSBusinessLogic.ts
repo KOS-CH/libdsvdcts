@@ -63,7 +63,7 @@ export class DSBusinessLogic {
         'debug',
         `found device ${JSON.stringify(affectedDevice)}`
       );
-      if (affectedDevice) {
+      if (affectedDevice && affectedDevice.binaryInputDescriptions) {
         const inputStates: Array<any> = [];
         affectedDevice.binaryInputDescriptions.forEach((i: any) => {
           inputStates.push({
@@ -83,7 +83,7 @@ export class DSBusinessLogic {
         (d: any) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase()
       );
 
-      if (affectedDevice) {
+      if (affectedDevice && affectedDevice.sensorDescription) {
         // found device, lets do some magic
         const getStates: Array<{[key: string]: string}> = [];
         let key;
@@ -142,7 +142,7 @@ export class DSBusinessLogic {
   private channelStatesRequest(msg: any) {
     this.events.log(
       'debug',
-      `received request for status ${JSON.stringify(msg)}`
+      `received request for channelState ${JSON.stringify(msg)}`
     );
 
     // search if the dsUID is known
@@ -155,7 +155,7 @@ export class DSBusinessLogic {
         'FOUND DEVICE: ' + JSON.stringify(affectedDevice)
       );
 
-      if (affectedDevice) {
+      if (affectedDevice && affectedDevice.channelDescriptions) {
         // found a device -> lets see what states are required
         const getStates: Array<{[key: string]: string}> = [];
         if (msg && msg.names && msg.names.length > 0) {
@@ -173,27 +173,14 @@ export class DSBusinessLogic {
               let stateObj: {[key: string]: string} = {};
               stateObj[e] = affectedDevice.watchStateIDs[e];
               getStates.push(stateObj);
-            } else if (
-              e === 'brightness' &&
-              Object.keys(affectedDevice.watchStateIDs).length == 1
-            ) {
-              // this is a special case. A query for brightness in a device without brightness... this must be a switch
-              try {
-                let stateObj: {[key: string]: string} = {};
-                stateObj[e] = affectedDevice.watchStateIDs['switch'];
-                getStates.push(stateObj);
-              } catch (e: any) {
-                this.events.log(
-                  'error',
-                  `tried to fake brightness for switches and it failed miserably! affectedDevice ${JSON.stringify(
-                    affectedDevice
-                  )} | name: ${e}`
-                );
-              }
             }
           });
         } else {
           // names is empty -> sending state for device
+          this.events.log(
+            'debug',
+            'names was empty in the channelstate request'
+          );
           let key;
           let value;
           for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
@@ -208,7 +195,10 @@ export class DSBusinessLogic {
           const handleCallback = (stateObj: any) => {
             if (stateObj) {
               // we have a reply
-              this.events.log('debug', JSON.stringify(stateObj));
+              this.events.log(
+                'debug',
+                `channelStates stateObj: ${JSON.stringify(stateObj)}`
+              );
               const elements: Array<any> = [];
               let key;
               let value: any;
@@ -220,26 +210,14 @@ export class DSBusinessLogic {
                   `channelState value detection: ${typeof value.val}`
                 );
                 if (msg && msg.names && msg.names.length > 0) {
-                  if (
-                    key == 'brightness' &&
-                    !affectedDevice.watchStateIDs[key]
-                  ) {
-                    // specialcase. we have a brightness channelState for an affected device without brightness. This is a switch, so lets rename stuff
-                    key = '0';
-                    if (value.val) {
-                      // switch is set to true -> the value is 100
-                      valueObj.vDouble = 100;
-                    } else {
-                      // switch is set to false -> the value is 0
-                      valueObj.vDouble = 0;
-                    }
-                  } else {
-                    // normal usecase. try to guess the valueobj type
-                    if (typeof value.val == 'boolean') {
-                      valueObj.vBool = value.val;
-                    } else if (typeof value.val == 'number') {
-                      valueObj.vDouble = value.val;
-                    }
+                  this.events.log(
+                    'debug',
+                    'names in channelState request was full -> normal processing'
+                  );
+                  if (typeof value.val == 'boolean') {
+                    valueObj.vBool = value.val;
+                  } else if (typeof value.val == 'number') {
+                    valueObj.vDouble = value.val;
                   }
 
                   elements.push({
@@ -252,6 +230,10 @@ export class DSBusinessLogic {
                   });
                 } else {
                   // names was an empty array -> we cannot return named elements
+                  this.events.log(
+                    'debug',
+                    'names in channelState request was empty -> breakout for flat elements array'
+                  );
                   if (value.val) {
                     // switch is set to true -> the value is 100
                     valueObj.vDouble = 100;
@@ -259,11 +241,14 @@ export class DSBusinessLogic {
                     // switch is set to false -> the value is 0
                     valueObj.vDouble = 0;
                   }
-                  elements.push([
-                    {name: 'age', value: {vDouble: 1}},
-                    {name: 'error', value: {vUint64: '0'}},
-                    {name: 'value', value: valueObj},
-                  ]);
+                  elements.push({name: 'age', value: {vDouble: 1}});
+                  elements.push({name: 'error', value: {vUint64: '0'}});
+                  elements.push({name: 'value', value: valueObj});
+
+                  this.events.log(
+                    'debug',
+                    `empty names channelstate: ${JSON.stringify(elements)}`
+                  );
                 }
               }
               // send it to the VDC
