@@ -325,6 +325,10 @@ export class DSBusinessLogic {
             // no stored scene found -> executing poweroff if the scene matches some predefined values
             // first search for the poweroff state
             const switchState = affectedDevice.watchStateIDs['switch'];
+            this.events.log(
+              'debug',
+              `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState}`
+            );
             if (switchState) {
               switch (msg.scene) {
                 case 0:
@@ -347,6 +351,10 @@ export class DSBusinessLogic {
                   break;
                 case 13:
                   // Special Scene Minimum
+                  this.events.log(
+                    'debug',
+                    `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching minium scene 13`
+                  );
                   this.events.emitSetState(
                     switchState,
                     false,
@@ -365,6 +373,10 @@ export class DSBusinessLogic {
                   break;
                 case 14:
                   // Special Scene Maximum
+                  this.events.log(
+                    'debug',
+                    `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching maximum scene 14`
+                  );
                   this.events.emitSetState(
                     switchState,
                     true,
