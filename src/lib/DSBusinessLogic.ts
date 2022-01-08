@@ -345,6 +345,42 @@ export class DSBusinessLogic {
                     }
                   );
                   break;
+                case 13:
+                  // Special Scene Minimum
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+                case 14:
+                  // Special Scene Maximum
+                  this.events.emitSetState(
+                    switchState,
+                    true,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
                 case 32:
                   // Set output value to Preset 10 (Default: Off)
                   this.events.emitSetState(
