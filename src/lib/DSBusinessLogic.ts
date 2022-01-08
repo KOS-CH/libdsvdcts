@@ -1,16 +1,26 @@
 import {libdsvdc} from './libdsvdc';
 import {Type} from 'protobufjs';
 import {createSubElements} from './messageMapping';
+import {rgbhelper} from 'rgbhelper';
 
 export class DSBusinessLogic {
   events: libdsvdc;
   devices: any;
   vdsm: Type;
+  outputChannelBuffer: Array<{
+    dSUID: string;
+    buffer: Array<{
+      name: string;
+      state: string;
+      value: string | number | undefined;
+    }>;
+  }>;
 
   constructor(config: {events: libdsvdc; devices: any; vdsm: Type}) {
     this.events = config.events;
     this.devices = config.devices;
     this.vdsm = config.vdsm;
+    this.outputChannelBuffer = [];
     this.events.on(
       'binaryInputStateRequest',
       this.binaryInputStateRequest.bind(this)
@@ -38,8 +48,33 @@ export class DSBusinessLogic {
     );
   }
 
-  private binaryInputStateRequest() {
-    console.log('TEEEEEEEESSST\n\n\n\n\n');
+  private binaryInputStateRequest(msg: any) {
+    this.events.log(
+      'debug',
+      `received request for binaryInputStateRequest ${JSON.stringify(msg)}`
+    );
+
+    // search if the dsUID is known
+    if (msg && msg.dSUID) {
+      const affectedDevice = this.devices.find(
+        (d: any) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase()
+      );
+      this.events.log(
+        'debug',
+        `found device ${JSON.stringify(affectedDevice)}`
+      );
+      if (affectedDevice) {
+        const inputStates: Array<any> = [];
+        affectedDevice.binaryInputDescriptions.forEach((i: any) => {
+          inputStates.push({
+            name: i.objName,
+            age: 1,
+            value: null,
+          });
+        });
+        this._sendBinaryInputState(inputStates, msg.messageId);
+      }
+    }
   }
 
   private sensorStatesRequest(msg: any) {
@@ -68,7 +103,10 @@ export class DSBusinessLogic {
               let key: string;
               let state: any;
               for ([key, state] of Object.entries(stateObj)) {
-                console.log('msg value from state: ' + JSON.stringify(state));
+                this.events.log(
+                  'debug',
+                  'msg value from state: ' + JSON.stringify(state)
+                );
 
                 if (
                   affectedDevice.modifiers &&
@@ -102,14 +140,20 @@ export class DSBusinessLogic {
    * @private
    */
   private channelStatesRequest(msg: any) {
-    console.log(`received request for status ${JSON.stringify(msg)}`);
+    this.events.log(
+      'debug',
+      `received request for status ${JSON.stringify(msg)}`
+    );
 
     // search if the dsUID is known
     if (msg && msg.dSUID) {
       const affectedDevice = this.devices.find(
         (d: any) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase()
       );
-      console.log('FOUND DEVICE: ' + JSON.stringify(affectedDevice));
+      this.events.log(
+        'debug',
+        'FOUND DEVICE: ' + JSON.stringify(affectedDevice)
+      );
 
       if (affectedDevice) {
         // found a device -> lets see what states are required
@@ -143,18 +187,18 @@ export class DSBusinessLogic {
           const handleCallback = (stateObj: any) => {
             if (stateObj) {
               // we have a reply
-              console.log(JSON.stringify(stateObj));
+              this.events.log('debug', JSON.stringify(stateObj));
               const elements: Array<any> = [];
               let key;
               let value: any;
               for ([key, value] of Object.entries(stateObj)) {
                 // loop all states
                 let valueObj: {[key: string]: any} = {};
-                console.log(
-                  '---------------\n\n\n\nTYPEOF VALUE: ',
-                  typeof value.val,
-                  '-----------------\n\n\n'
+                this.events.log(
+                  'debug',
+                  `channelState value detection: ${typeof value.val}`
                 );
+
                 if (typeof value.val == 'boolean') {
                   valueObj.vBool = value.val;
                 } else if (typeof value.val == 'number') {
@@ -180,11 +224,394 @@ export class DSBusinessLogic {
     }
   }
 
-  private vdsmNotificationCallScene() {}
+  private vdsmNotificationCallScene(msg: any) {
+    this.events.log(
+      'debug',
+      `received call scene event ${JSON.stringify(msg)}`
+    );
+    if (msg && msg.dSUID) {
+      msg.dSUID.forEach((id: string) => {
+        const affectedDevice = this.devices.find(
+          (d: any) => d.dSUID.toLowerCase() == id.toLowerCase()
+        );
+        if (affectedDevice && affectedDevice.scenes) {
+          // check if there is a stored scene first, if yes, execute the stored values. if not, fallback to the default which takes care of shutting down based on predefined scenes
+          const storedScene = affectedDevice.scenes.find((s: any) => {
+            return s.sceneId == msg.scene;
+          });
+          if (storedScene) {
+            // we found a stored scene -> execute it
+            let key: any;
+            let value: any;
+            this.events.log(
+              'debug',
+              `looping the values inside scene ${msg.scene} -> ${JSON.stringify(
+                storedScene
+              )}`
+            );
+            for ([key, value] of Object.entries(storedScene.values)) {
+              this.events.log(
+                'debug',
+                `performing update on state: ${key} ${JSON.stringify(
+                  affectedDevice.watchStateID
+                )} with key ${key} value ${value.value}`
+              );
+              // if (key == "switch") value.value = true; // set power state on
+              this.events.log(
+                'debug',
+                `setting ${value.value} of ${affectedDevice.name} to on ${affectedDevice.watchStateID[key]}`
+              );
+              this.events.emitSetState(
+                affectedDevice.watchStateIDs[key],
+                value.value,
+                false,
+                (error: any) => {
+                  if (error) {
+                    this.events.log(
+                      'error',
+                      `Failed to set ${
+                        affectedDevice.watchStateIDs[key]
+                      } on device ${JSON.stringify(affectedDevice)} to value ${
+                        value.value
+                      } with error ${error}`
+                    );
+                  }
+                }
+              );
+            }
+          } else {
+            // no stored scene found -> executing poweroff if the scene matches some predefined values
+            // first search for the poweroff state
+            const switchState = affectedDevice.watchStateIDs['switch'];
+            if (switchState) {
+              switch (msg.scene) {
+                case 0:
+                  // Set output value to Preset 0 (Default: Off)
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+                case 32:
+                  // Set output value to Preset 10 (Default: Off)
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+                case 34:
+                  // Set output value to Preset 20 (Default: Off)
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+                case 36:
+                  // Set output value to Preset 30 (Default: Off)
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+                case 38:
+                  // Set output value to Preset 40 (Default: Off)
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+                case 72:
+                  // Absent (Default: Off)
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+                case 69:
+                  // Sleeping (Default: Off)
+                  this.events.emitSetState(
+                    switchState,
+                    false,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${switchState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to false with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  break;
+              }
+            } else {
+              this.events.log(
+                'debug',
+                `no switch state found in ${JSON.stringify(
+                  affectedDevice
+                )} for scene ${msg.scene}`
+              );
+            }
+          }
+        }
+      });
+    }
+  }
 
-  private vdsmNotificationSaveScene() {}
+  private vdsmNotificationSaveScene(msg: any) {
+    this.events.log(
+      'debug',
+      `received save scene event ${JSON.stringify(msg)}`
+    );
+    if (msg && msg.dSUID) {
+      msg.dSUID.forEach(async (id: string) => {
+        // this.log.debug(`searching for ${id} in ${JSON.stringify(this.config.dsDevices)}`);
+        const affectedDevice = this.devices.find(
+          (d: any) => d.dSUID.toLowerCase() == id.toLowerCase()
+        );
+        if (affectedDevice) {
+          const getStates: Array<{[key: string]: string}> = [];
+          let key;
+          let value;
+          for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
+            // loop all states
+            let stateObj: {[key: string]: string} = {};
+            stateObj[key as string] = value as string;
+            getStates.push(stateObj);
+          }
 
-  private vdsmNotificationSetOutputChannelValue() {}
+          if (getStates && getStates.length > 0) {
+            const handleCallback = (stateObj: any) => {
+              if (stateObj) {
+                // we have some return values -> store them into the scene object
+                const sceneVals: any = {};
+                const sensorStates: Array<any> = [];
+                let key: string;
+                let state: any;
+                for ([key, state] of Object.entries(stateObj)) {
+                  this.events.log(
+                    'debug',
+                    'msg value from state: ' + JSON.stringify(state)
+                  );
+                  const dC = false;
+                  sceneVals[key] = {value: state.val, dontCare: dC}; // TODO understand and make it dynamic
+                }
+                // delete the current scene first
+                affectedDevice.scenes = affectedDevice.scenes.filter(
+                  (d: any) => d.sceneId != msg.scene
+                );
+                affectedDevice.scenes.push({
+                  sceneId: msg.scene,
+                  values: sceneVals,
+                });
+                this.events.log(
+                  'debug',
+                  `Set scene ${msg.scene} on ${
+                    affectedDevice.name
+                  } ::: ${JSON.stringify(this.devices)}`
+                );
+                // make it persistent by storing it back to the device
+                this.events.emitObject('updateDeviceValues', affectedDevice);
+              }
+            };
+            this.events.emitGetState(getStates, handleCallback.bind(this));
+          }
+        }
+      });
+    }
+  }
+
+  private vdsmNotificationSetOutputChannelValue(msg: any) {
+    this.events.log(
+      'debug',
+      `received OUTPUTCHANNELVALUE value ${JSON.stringify(msg)}`
+    );
+    if (msg && msg.dSUID) {
+      msg.dSUID.forEach((id: string) => {
+        const affectedDevice = this.devices.find(
+          (d: any) => d.dSUID.toLowerCase() == id.toLowerCase()
+        );
+        if (affectedDevice) {
+          const affectedState = affectedDevice.watchStateID[msg.channelId];
+          if (affectedState) {
+            let myOutputChannelBuffer = this.outputChannelBuffer.find(
+              b => b.dSUID == msg.dSUID
+            );
+            if (!myOutputChannelBuffer) {
+              // first value -> create a new buffer object
+              myOutputChannelBuffer = {
+                dSUID: msg.dSUID,
+                buffer: [],
+              };
+              this.outputChannelBuffer.push(myOutputChannelBuffer);
+            }
+            myOutputChannelBuffer.buffer.push({
+              name: msg.channelId,
+              state: affectedState,
+              value: msg.value,
+            });
+            if (msg.applyNow) {
+              // write buffer and clear it again
+              if (
+                Object.keys(affectedDevice.watchStateIDs).includes('rgb') &&
+                myOutputChannelBuffer.buffer.find(
+                  b => b.name == 'saturation'
+                ) &&
+                myOutputChannelBuffer.buffer.find(b => b.name == 'hue') &&
+                myOutputChannelBuffer.buffer.find(b => b.name == 'brightness')
+              ) {
+                // we have a colorupdate. since we have an rgb value, we don't care about sat, hue & brightness anymore
+                this.events.log(
+                  'debug',
+                  'colorupdate and we have found an rgb watchState'
+                );
+                const sat = myOutputChannelBuffer.buffer.find(
+                  b => b.name == 'saturation'
+                );
+                const hue = myOutputChannelBuffer.buffer.find(
+                  b => b.name == 'hue'
+                );
+                const brightness = myOutputChannelBuffer.buffer.find(
+                  b => b.name == 'brightness'
+                );
+                if (sat && hue && brightness) {
+                  this.events.log(
+                    'debug',
+                    `Hue: ${hue.value} Saturation: ${sat.value} Brightness: ${brightness.value}`
+                  );
+                  const rgb = rgbhelper.hsvTOrgb(
+                    hue.value,
+                    sat.value,
+                    brightness.value
+                  );
+                  const rgbHex = rgbhelper.rgbTOhex(rgb);
+                  this.events.log('debug', `Calculated rgb in hex: ${rgbHex}`);
+                  const rgbState = affectedDevice.watchStateID['rgb'];
+                  this.events.emitSetState(
+                    rgbState,
+                    rgbHex,
+                    false,
+                    (error: any) => {
+                      if (error) {
+                        this.events.log(
+                          'error',
+                          `Failed to set ${rgbState} on device ${JSON.stringify(
+                            affectedDevice
+                          )} to value ${rgbHex} with error ${error}`
+                        );
+                      }
+                    }
+                  );
+                  // clear brightness & hue & sat from buffer, since we already took care of using them for rgb
+                  myOutputChannelBuffer.buffer =
+                    myOutputChannelBuffer.buffer.filter(function (obj) {
+                      return (
+                        obj.name !== 'brightness' &&
+                        obj.name !== 'hue' &&
+                        obj.name != 'saturation'
+                      );
+                    });
+                }
+              }
+              // apply everything within the buffer
+              myOutputChannelBuffer.buffer.forEach((b: any) => {
+                // set state
+                this.events.emitSetState(
+                  b.state,
+                  b.value,
+                  false,
+                  (error: any) => {
+                    if (error) {
+                      this.events.log(
+                        'error',
+                        `Failed to set ${b.state} on device ${JSON.stringify(
+                          affectedDevice
+                        )} to value ${b.value} with error ${error}`
+                      );
+                    }
+                  }
+                );
+              });
+              // delete buffer
+              this.outputChannelBuffer = this.outputChannelBuffer.filter(
+                function (obj) {
+                  return obj.dSUID !== msg.dSUID;
+                }
+              );
+            }
+          }
+        }
+      });
+    }
+  }
 
   /**
    * ControlValues are sent by DS on a regular bases including temperature within the zone & outside temperature / brightness. When editing an outputchannel direclty in the hardware tab control values are being used to set the values
@@ -192,7 +619,7 @@ export class DSBusinessLogic {
    * @private
    */
   private vdsmNotificationSetControlValue(msg: any) {
-    console.log('CONTROLVALUE RECEIVED', JSON.stringify(msg));
+    this.events.log('debug', 'CONTROLVALUE RECEIVED ' + JSON.stringify(msg));
     if (msg && msg.name) {
       if (msg && msg.dSUID) {
         msg.dSUID.forEach((id: string) => {
@@ -229,14 +656,15 @@ export class DSBusinessLogic {
               );
             }
           } else if (msg.name === 'TemperatureOutside') {
-            console.log('SET STATE for TemperatureOutside');
+            this.events.log('debug', 'SET STATE for TemperatureOutside');
             this.events.emitSetState(
               'DS-Devices.outdoorValues.temperature',
               msg.value,
               true,
               (error: any) => {
                 if (error)
-                  console.error(
+                  this.events.log(
+                    'error',
                     `Failed setting DS-Devices.outdoorValues.temperature to value ${msg.value} with error ${error}`
                   );
               }
@@ -248,7 +676,8 @@ export class DSBusinessLogic {
               true,
               (error: any) => {
                 if (error)
-                  console.error(
+                  this.events.log(
+                    'error',
                     `Failed setting DS-Devices.outdoorValues.brightness to value ${msg.value} with error ${error}`
                   );
               }
@@ -277,7 +706,8 @@ export class DSBusinessLogic {
       });
     }
 
-    console.log(
+    this.events.log(
+      'debug',
       JSON.stringify({
         type: 5,
         messageId: messageId,
@@ -290,7 +720,7 @@ export class DSBusinessLogic {
       vdcResponseGetProperty: {properties},
     });
     const answerBuf = this.vdsm.encode(answerObj).finish();
-    console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+    this.events.log('debug', JSON.stringify(this.vdsm.decode(answerBuf)));
     // conn.write(this._addHeaders(answerBuf));
     /**
      * @event messageSent - New message sent to VDSM
@@ -326,7 +756,8 @@ export class DSBusinessLogic {
         elements: elements,
       });
 
-      console.log(
+      this.events.log(
+        'debug',
         JSON.stringify({
           type: 5,
           messageId: messageId,
@@ -339,7 +770,54 @@ export class DSBusinessLogic {
         vdcResponseGetProperty: {properties},
       });
       const answerBuf = this.vdsm.encode(answerObj).finish();
-      console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+      this.events.log('debug', JSON.stringify(this.vdsm.decode(answerBuf)));
+      // conn.write(this._addHeaders(answerBuf));
+      /**
+       * @event messageSent - New message sent to VDSM
+       * @type {object}
+       * @property {object} Message Object
+       */
+      this.events.emitObject('vdcPushChannelStates', answerBuf);
+      this.events.emitObject('messageSent', this.vdsm.decode(answerBuf));
+    }
+  }
+
+  private _sendBinaryInputState(inputStates: any, messageId: number) {
+    const properties = [];
+    const elements: any = [];
+    if (inputStates && inputStates.length > 0) {
+      inputStates.forEach((i: any) => {
+        const subElements = createSubElements({
+          age: i.age,
+          error: 0,
+          value_boolean: i.value,
+          extendedValue: null,
+        });
+        elements.push({
+          name: i.name,
+          elements: subElements,
+        });
+      });
+      properties.push({
+        name: 'binaryInputStates',
+        elements: elements,
+      });
+
+      this.events.log(
+        'debug',
+        JSON.stringify({
+          type: 5,
+          messageId: messageId,
+          vdcResponseGetProperty: {properties},
+        })
+      );
+      const answerObj = this.vdsm.fromObject({
+        type: 5,
+        messageId: messageId,
+        vdcResponseGetProperty: {properties},
+      });
+      const answerBuf = this.vdsm.encode(answerObj).finish();
+      this.events.log('debug', JSON.stringify(this.vdsm.decode(answerBuf)));
       // conn.write(this._addHeaders(answerBuf));
       /**
        * @event messageSent - New message sent to VDSM

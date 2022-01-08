@@ -14,6 +14,9 @@ class DSEventEmitter extends events_1.EventEmitter {
     emitObject(event, obj = {}) {
         this.emit(event, obj);
     }
+    log(type, msg) {
+        this.emit('vdcLog', type, msg);
+    }
 }
 exports.DSEventEmitter = DSEventEmitter;
 //# sourceMappingURL=DSEventEmitter.js.map

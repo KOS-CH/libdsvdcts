@@ -17,4 +17,8 @@ export class DSEventEmitter extends EventEmitter {
   emitObject(event: string, obj = {}) {
     this.emit(event, obj);
   }
+
+  log(type: 'silly' | 'debug' | 'info' | 'warn' | 'error', msg: string) {
+    this.emit('vdcLog', type, msg);
+  }
 }

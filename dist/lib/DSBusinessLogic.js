@@ -7,6 +7,7 @@ class DSBusinessLogic {
         this.events = config.events;
         this.devices = config.devices;
         this.vdsm = config.vdsm;
+        this.outputChannelBuffer = [];
         this.events.on('binaryInputStateRequest', this.binaryInputStateRequest.bind(this));
         this.events.on('sensorStatesRequest', this.sensorStatesRequest.bind(this));
         this.events.on('VDSM_NOTIFICATION_SET_CONTROL_VALUE', this.vdsmNotificationSetControlValue.bind(this));
@@ -15,8 +16,23 @@ class DSBusinessLogic {
         this.events.on('VDSM_NOTIFICATION_CALL_SCENE', this.vdsmNotificationCallScene.bind(this));
         this.events.on('channelStatesRequest', this.channelStatesRequest.bind(this));
     }
-    binaryInputStateRequest() {
-        console.log('TEEEEEEEESSST\n\n\n\n\n');
+    binaryInputStateRequest(msg) {
+        this.events.log('debug', `received request for binaryInputStateRequest ${JSON.stringify(msg)}`);
+        if (msg && msg.dSUID) {
+            const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
+            this.events.log('debug', `found device ${JSON.stringify(affectedDevice)}`);
+            if (affectedDevice) {
+                const inputStates = [];
+                affectedDevice.binaryInputDescriptions.forEach((i) => {
+                    inputStates.push({
+                        name: i.objName,
+                        age: 1,
+                        value: null,
+                    });
+                });
+                this._sendBinaryInputState(inputStates, msg.messageId);
+            }
+        }
     }
     sensorStatesRequest(msg) {
         if (msg && msg.dSUID) {
@@ -37,7 +53,7 @@ class DSBusinessLogic {
                             let key;
                             let state;
                             for ([key, state] of Object.entries(stateObj)) {
-                                console.log('msg value from state: ' + JSON.stringify(state));
+                                this.events.log('debug', 'msg value from state: ' + JSON.stringify(state));
                                 if (affectedDevice.modifiers &&
                                     typeof affectedDevice.modifiers == 'object' &&
                                     key &&
@@ -61,10 +77,10 @@ class DSBusinessLogic {
         }
     }
     channelStatesRequest(msg) {
-        console.log(`received request for status ${JSON.stringify(msg)}`);
+        this.events.log('debug', `received request for status ${JSON.stringify(msg)}`);
         if (msg && msg.dSUID) {
             const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
-            console.log('FOUND DEVICE: ' + JSON.stringify(affectedDevice));
+            this.events.log('debug', 'FOUND DEVICE: ' + JSON.stringify(affectedDevice));
             if (affectedDevice) {
                 const getStates = [];
                 if (msg && msg.names && msg.names.length > 0) {
@@ -89,13 +105,13 @@ class DSBusinessLogic {
                 if (getStates && getStates.length > 0) {
                     const handleCallback = (stateObj) => {
                         if (stateObj) {
-                            console.log(JSON.stringify(stateObj));
+                            this.events.log('debug', JSON.stringify(stateObj));
                             const elements = [];
                             let key;
                             let value;
                             for ([key, value] of Object.entries(stateObj)) {
                                 let valueObj = {};
-                                console.log('---------------\n\n\n\nTYPEOF VALUE: ', typeof value.val, '-----------------\n\n\n');
+                                this.events.log('debug', `channelState value detection: ${typeof value.val}`);
                                 if (typeof value.val == 'boolean') {
                                     valueObj.vBool = value.val;
                                 }
@@ -121,9 +137,51 @@ class DSBusinessLogic {
     }
     vdsmNotificationCallScene() { }
     vdsmNotificationSaveScene() { }
-    vdsmNotificationSetOutputChannelValue() { }
+    vdsmNotificationSetOutputChannelValue(msg) {
+        this.events.log('debug', `received OUTPUTCHANNELVALUE value ${JSON.stringify(msg)}`);
+        if (msg && msg.dSUID) {
+            msg.dSUID.forEach((id) => {
+                const affectedDevice = this.devices.find((d) => d.dsConfig.dSUID.toLowerCase() == id.toLowerCase());
+                if (affectedDevice) {
+                    const affectedState = affectedDevice.watchStateID[msg.channelId];
+                    if (affectedState) {
+                        let myOutputChannelBuffer = this.outputChannelBuffer.find(b => b.dSUID == msg.dSUID);
+                        if (!myOutputChannelBuffer) {
+                            myOutputChannelBuffer = {
+                                dSUID: msg.dSUID,
+                                buffer: [],
+                            };
+                            this.outputChannelBuffer.push(myOutputChannelBuffer);
+                        }
+                        myOutputChannelBuffer.buffer.push({
+                            name: msg.channelId,
+                            state: affectedState,
+                            value: msg.value,
+                        });
+                        if (msg.applyNow) {
+                            if (Object.keys(affectedDevice.watchStateIDs).includes('rgb') &&
+                                myOutputChannelBuffer.buffer.find(b => b.name == 'saturation') &&
+                                myOutputChannelBuffer.buffer.find(b => b.name == 'hue') &&
+                                myOutputChannelBuffer.buffer.find(b => b.name == 'brightness')) {
+                                this.events.log('debug', 'colorupdate and we have found an rgb watchState');
+                                const sat = myOutputChannelBuffer.buffer.find(b => b.name == 'saturation');
+                                const hue = myOutputChannelBuffer.buffer.find(b => b.name == 'hue');
+                                const brightness = myOutputChannelBuffer.buffer.find(b => b.name == 'brightness');
+                                if (sat && hue && brightness) {
+                                    this.events.log('debug', `Hue: ${hue.value} Saturation: ${sat.value} Brightness: ${brightness.value}`);
+                                    const rgb = rgbhelper.hsvTOrgb(hue.value, sat.value, brightness.value);
+                                    const rgbHex = rgbhelper.rgbTOhex(rgb);
+                                    this.events.log('debug', `Calculated rgb in hex: ${rgbHex}`);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
     vdsmNotificationSetControlValue(msg) {
-        console.log('CONTROLVALUE RECEIVED', JSON.stringify(msg));
+        this.events.log('debug', 'CONTROLVALUE RECEIVED ' + JSON.stringify(msg));
         if (msg && msg.name) {
             if (msg && msg.dSUID) {
                 msg.dSUID.forEach((id) => {
@@ -141,16 +199,16 @@ class DSBusinessLogic {
                         }
                     }
                     else if (msg.name === 'TemperatureOutside') {
-                        console.log('SET STATE for TemperatureOutside');
+                        this.events.log('debug', 'SET STATE for TemperatureOutside');
                         this.events.emitSetState('DS-Devices.outdoorValues.temperature', msg.value, true, (error) => {
                             if (error)
-                                console.error(`Failed setting DS-Devices.outdoorValues.temperature to value ${msg.value} with error ${error}`);
+                                this.events.log('error', `Failed setting DS-Devices.outdoorValues.temperature to value ${msg.value} with error ${error}`);
                         });
                     }
                     else if (msg.name === 'BrightnessOutside') {
                         this.events.emitSetState('DS-Devices.outdoorValues.brightness', msg.value, true, (error) => {
                             if (error)
-                                console.error(`Failed setting DS-Devices.outdoorValues.brightness to value ${msg.value} with error ${error}`);
+                                this.events.log('error', `Failed setting DS-Devices.outdoorValues.brightness to value ${msg.value} with error ${error}`);
                         });
                     }
                 });
@@ -171,7 +229,7 @@ class DSBusinessLogic {
                 elements: [rawSubElements],
             });
         }
-        console.log(JSON.stringify({
+        this.events.log('debug', JSON.stringify({
             type: 5,
             messageId: messageId,
             vdcResponseGetProperty: { properties },
@@ -182,7 +240,7 @@ class DSBusinessLogic {
             vdcResponseGetProperty: { properties },
         });
         const answerBuf = this.vdsm.encode(answerObj).finish();
-        console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+        this.events.log('debug', JSON.stringify(this.vdsm.decode(answerBuf)));
         this.events.emitObject('vdcPushChannelStates', answerBuf);
         this.events.emitObject('messageSent', this.vdsm.decode(answerBuf));
     }
@@ -209,7 +267,7 @@ class DSBusinessLogic {
                 name: 'sensorStates',
                 elements: elements,
             });
-            console.log(JSON.stringify({
+            this.events.log('debug', JSON.stringify({
                 type: 5,
                 messageId: messageId,
                 vdcResponseGetProperty: { properties },
@@ -220,7 +278,43 @@ class DSBusinessLogic {
                 vdcResponseGetProperty: { properties },
             });
             const answerBuf = this.vdsm.encode(answerObj).finish();
-            console.log(JSON.stringify(this.vdsm.decode(answerBuf)));
+            this.events.log('debug', JSON.stringify(this.vdsm.decode(answerBuf)));
+            this.events.emitObject('vdcPushChannelStates', answerBuf);
+            this.events.emitObject('messageSent', this.vdsm.decode(answerBuf));
+        }
+    }
+    _sendBinaryInputState(inputStates, messageId) {
+        const properties = [];
+        const elements = [];
+        if (inputStates && inputStates.length > 0) {
+            inputStates.forEach((i) => {
+                const subElements = (0, messageMapping_1.createSubElements)({
+                    age: i.age,
+                    error: 0,
+                    value_boolean: i.value,
+                    extendedValue: null,
+                });
+                elements.push({
+                    name: i.name,
+                    elements: subElements,
+                });
+            });
+            properties.push({
+                name: 'binaryInputStates',
+                elements: elements,
+            });
+            this.events.log('debug', JSON.stringify({
+                type: 5,
+                messageId: messageId,
+                vdcResponseGetProperty: { properties },
+            }));
+            const answerObj = this.vdsm.fromObject({
+                type: 5,
+                messageId: messageId,
+                vdcResponseGetProperty: { properties },
+            });
+            const answerBuf = this.vdsm.encode(answerObj).finish();
+            this.events.log('debug', JSON.stringify(this.vdsm.decode(answerBuf)));
             this.events.emitObject('vdcPushChannelStates', answerBuf);
             this.events.emitObject('messageSent', this.vdsm.decode(answerBuf));
         }
