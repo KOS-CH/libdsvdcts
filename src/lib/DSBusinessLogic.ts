@@ -87,12 +87,19 @@ export class DSBusinessLogic {
                   'debug',
                   'msg value from state: ' + JSON.stringify(state)
                 );
-
-                inputStates.push({
-                  name: key as string,
-                  age: 1,
-                  value: state.val,
-                });
+                if (state) {
+                  inputStates.push({
+                    name: key as string,
+                    age: 1,
+                    value: state.val,
+                  });
+                } else {
+                  inputStates.push({
+                    name: key as string,
+                    age: 1,
+                    value: false,
+                  });
+                }
               }
               this._sendBinaryInputState(inputStates, msg.messageId);
             }
