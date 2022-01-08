@@ -99,16 +99,6 @@ export class DSBusinessLogic {
           };
           this.events.emitGetState(getStates, handleCallback.bind(this));
         }
-
-        const inputStates: Array<any> = [];
-        affectedDevice.binaryInputDescriptions.forEach((i: any) => {
-          inputStates.push({
-            name: i.objName,
-            age: 1,
-            value: null,
-          });
-        });
-        this._sendBinaryInputState(inputStates, msg.messageId);
       }
     }
   }
