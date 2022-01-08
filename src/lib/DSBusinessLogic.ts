@@ -179,7 +179,9 @@ export class DSBusinessLogic {
           // names is empty -> sending state for device
           this.events.log(
             'debug',
-            'names was empty in the channelstate request'
+            `names was empty in the channelstate request: affectedDevice ${JSON.stringify(
+              affectedDevice
+            )}`
           );
           let key;
           let value;
@@ -295,13 +297,13 @@ export class DSBusinessLogic {
               this.events.log(
                 'debug',
                 `performing update on state: ${key} ${JSON.stringify(
-                  affectedDevice.watchStateID
+                  affectedDevice.watchStateIDs
                 )} with key ${key} value ${value.value}`
               );
               // if (key == "switch") value.value = true; // set power state on
               this.events.log(
                 'debug',
-                `setting ${value.value} of ${affectedDevice.name} to on ${affectedDevice.watchStateID[key]}`
+                `setting ${value.value} of ${affectedDevice.name} to on ${affectedDevice.watchStateIDs[key]}`
               );
               this.events.emitSetState(
                 affectedDevice.watchStateIDs[key],
@@ -330,178 +332,8 @@ export class DSBusinessLogic {
               `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState}`
             );
             if (switchState) {
-              switch (msg.scene) {
-                case 0:
-                  // Set output value to Preset 0 (Default: Off)
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 13:
-                  // Special Scene Minimum
-                  this.events.log(
-                    'debug',
-                    `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching minium scene 13`
-                  );
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 14:
-                  // Special Scene Maximum
-                  this.events.log(
-                    'debug',
-                    `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching maximum scene 14`
-                  );
-                  this.events.emitSetState(
-                    switchState,
-                    true,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 32:
-                  // Set output value to Preset 10 (Default: Off)
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 34:
-                  // Set output value to Preset 20 (Default: Off)
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 36:
-                  // Set output value to Preset 30 (Default: Off)
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 38:
-                  // Set output value to Preset 40 (Default: Off)
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 72:
-                  // Absent (Default: Off)
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-                case 69:
-                  // Sleeping (Default: Off)
-                  this.events.emitSetState(
-                    switchState,
-                    false,
-                    false,
-                    (error: any) => {
-                      if (error) {
-                        this.events.log(
-                          'error',
-                          `Failed to set ${switchState} on device ${JSON.stringify(
-                            affectedDevice
-                          )} to false with error ${error}`
-                        );
-                      }
-                    }
-                  );
-                  break;
-              }
+              // perform default scene set
+              this._performDefaultScenesSet(msg, switchState, affectedDevice);
             } else {
               this.events.log(
                 'debug',
@@ -511,8 +343,154 @@ export class DSBusinessLogic {
               );
             }
           }
+        } else if (affectedDevice) {
+          // no scenes configured. Perform the default set
+          const switchState = affectedDevice.watchStateIDs['switch'];
+          if (switchState)
+            this._performDefaultScenesSet(msg, switchState, affectedDevice);
         }
       });
+    }
+  }
+
+  /**
+   * Digitalstrom has some default scenes (actually many of them). This function takes care of some of them (the most important ones)
+   * @param msg
+   * @param switchState
+   * @param affectedDevice
+   * @private
+   */
+  private _performDefaultScenesSet(
+    msg: any,
+    switchState: string,
+    affectedDevice: any
+  ) {
+    switch (msg.scene) {
+      case 0:
+        // Set output value to Preset 0 (Default: Off)
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 13:
+        // Special Scene Minimum
+        this.events.log(
+          'debug',
+          `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching minium scene 13`
+        );
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 14:
+        // Special Scene Maximum
+        this.events.log(
+          'debug',
+          `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching maximum scene 14`
+        );
+        this.events.emitSetState(switchState, true, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 32:
+        // Set output value to Preset 10 (Default: Off)
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 34:
+        // Set output value to Preset 20 (Default: Off)
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 36:
+        // Set output value to Preset 30 (Default: Off)
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 38:
+        // Set output value to Preset 40 (Default: Off)
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 72:
+        // Absent (Default: Off)
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
+      case 69:
+        // Sleeping (Default: Off)
+        this.events.emitSetState(switchState, false, false, (error: any) => {
+          if (error) {
+            this.events.log(
+              'error',
+              `Failed to set ${switchState} on device ${JSON.stringify(
+                affectedDevice
+              )} to false with error ${error}`
+            );
+          }
+        });
+        break;
     }
   }
 
@@ -590,7 +568,7 @@ export class DSBusinessLogic {
           (d: any) => d.dSUID.toLowerCase() == id.toLowerCase()
         );
         if (affectedDevice) {
-          const affectedState = affectedDevice.watchStateID[msg.channelId];
+          const affectedState = affectedDevice.watchStateIDs[msg.channelId];
           if (affectedState) {
             let myOutputChannelBuffer = this.outputChannelBuffer.find(
               b => b.dSUID == msg.dSUID
@@ -644,7 +622,7 @@ export class DSBusinessLogic {
                   );
                   const rgbHex = rgbhelper.rgbTOhex(rgb);
                   this.events.log('debug', `Calculated rgb in hex: ${rgbHex}`);
-                  const rgbState = affectedDevice.watchStateID['rgb'];
+                  const rgbState = affectedDevice.watchStateIDs['rgb'];
                   this.events.emitSetState(
                     rgbState,
                     rgbHex,
