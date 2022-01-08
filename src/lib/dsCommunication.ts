@@ -618,7 +618,8 @@ export function _vdcResponseGetProperty(
           // loop all indexes
           const messageNames: any = [];
           p.elements.forEach((el: any) => {
-            if (device.channelDescription[0][el.name]) {
+            if (el.name === '0') el.name == 'brightness';
+            if (device.channelDescriptions[0][el.name]) {
               // channel described -> emit query to get state
               messageNames.push(el.name);
             }
