@@ -64,6 +64,42 @@ export class DSBusinessLogic {
         `found device ${JSON.stringify(affectedDevice)}`
       );
       if (affectedDevice && affectedDevice.binaryInputDescriptions) {
+        // found device, lets do some magic
+        const getStates: Array<{[key: string]: string}> = [];
+        let key;
+        let value;
+        for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
+          // loop all states
+          let stateObj: {[key: string]: string} = {};
+          stateObj[key as string] = value as string;
+          getStates.push(stateObj);
+        }
+
+        if (getStates && getStates.length > 0) {
+          // we have some states to process
+          const handleCallback = (stateObj: any) => {
+            if (stateObj) {
+              const inputStates: Array<any> = [];
+              let key: string;
+              let state: any;
+              for ([key, state] of Object.entries(stateObj)) {
+                this.events.log(
+                  'debug',
+                  'msg value from state: ' + JSON.stringify(state)
+                );
+
+                inputStates.push({
+                  name: key as string,
+                  age: 1,
+                  value: state.val,
+                });
+              }
+              this._sendBinaryInputState(inputStates, msg.messageId);
+            }
+          };
+          this.events.emitGetState(getStates, handleCallback.bind(this));
+        }
+
         const inputStates: Array<any> = [];
         affectedDevice.binaryInputDescriptions.forEach((i: any) => {
           inputStates.push({
