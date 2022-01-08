@@ -159,6 +159,10 @@ export class DSBusinessLogic {
         // found a device -> lets see what states are required
         const getStates: Array<{[key: string]: string}> = [];
         if (msg && msg.names && msg.names.length > 0) {
+          this.events.log(
+            'debug',
+            `get channelStates with names: ${JSON.stringify(msg.names)}`
+          );
           msg.names.forEach((e: any) => {
             // loop all names which are the values of interest
             const updateStateId = Object.keys(
@@ -169,6 +173,23 @@ export class DSBusinessLogic {
               let stateObj: {[key: string]: string} = {};
               stateObj[e] = affectedDevice.watchStateIDs[e];
               getStates.push(stateObj);
+            } else if (
+              e === 'brightness' &&
+              Object.keys(affectedDevice.watchStateIDs).length == 1
+            ) {
+              // this is a special case. A query for brightness in a device without brightness... this must be a switch
+              try {
+                let stateObj: {[key: string]: string} = {};
+                stateObj[e] = affectedDevice.watchStateIDs['switch'];
+                getStates.push(stateObj);
+              } catch (e: any) {
+                this.events.log(
+                  'error',
+                  `tried to fake brightness for switches and it failed miserably! affectedDevice ${JSON.stringify(
+                    affectedDevice
+                  )} | name: ${e}`
+                );
+              }
             }
           });
         } else {
@@ -199,10 +220,23 @@ export class DSBusinessLogic {
                   `channelState value detection: ${typeof value.val}`
                 );
 
-                if (typeof value.val == 'boolean') {
-                  valueObj.vBool = value.val;
-                } else if (typeof value.val == 'number') {
-                  valueObj.vDouble = value.val;
+                if (key == 'brightness' && !affectedDevice.watchStateIDs[key]) {
+                  // specialcase. we have a brightness channelState for an affected device without brightness. This is a switch, so lets rename stuff
+                  key = '0';
+                  if (value.val) {
+                    // switch is set to true -> the value is 100
+                    valueObj.vDouble = 100;
+                  } else {
+                    // switch is set to false -> the value is 0
+                    valueObj.vDouble = 0;
+                  }
+                } else {
+                  // normal usecase. try to guess the valueobj type
+                  if (typeof value.val == 'boolean') {
+                    valueObj.vBool = value.val;
+                  } else if (typeof value.val == 'number') {
+                    valueObj.vDouble = value.val;
+                  }
                 }
 
                 elements.push({
