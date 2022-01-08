@@ -219,10 +219,39 @@ export class DSBusinessLogic {
                   'debug',
                   `channelState value detection: ${typeof value.val}`
                 );
+                if (msg && msg.names && msg.names.length > 0) {
+                  if (
+                    key == 'brightness' &&
+                    !affectedDevice.watchStateIDs[key]
+                  ) {
+                    // specialcase. we have a brightness channelState for an affected device without brightness. This is a switch, so lets rename stuff
+                    key = '0';
+                    if (value.val) {
+                      // switch is set to true -> the value is 100
+                      valueObj.vDouble = 100;
+                    } else {
+                      // switch is set to false -> the value is 0
+                      valueObj.vDouble = 0;
+                    }
+                  } else {
+                    // normal usecase. try to guess the valueobj type
+                    if (typeof value.val == 'boolean') {
+                      valueObj.vBool = value.val;
+                    } else if (typeof value.val == 'number') {
+                      valueObj.vDouble = value.val;
+                    }
+                  }
 
-                if (key == 'brightness' && !affectedDevice.watchStateIDs[key]) {
-                  // specialcase. we have a brightness channelState for an affected device without brightness. This is a switch, so lets rename stuff
-                  key = '0';
+                  elements.push({
+                    name: key as string,
+                    elements: [
+                      {name: 'age', value: {vDouble: 1}},
+                      {name: 'error', value: {vUint64: '0'}},
+                      {name: 'value', value: valueObj},
+                    ],
+                  });
+                } else {
+                  // names was an empty array -> we cannot return named elements
                   if (value.val) {
                     // switch is set to true -> the value is 100
                     valueObj.vDouble = 100;
@@ -230,23 +259,12 @@ export class DSBusinessLogic {
                     // switch is set to false -> the value is 0
                     valueObj.vDouble = 0;
                   }
-                } else {
-                  // normal usecase. try to guess the valueobj type
-                  if (typeof value.val == 'boolean') {
-                    valueObj.vBool = value.val;
-                  } else if (typeof value.val == 'number') {
-                    valueObj.vDouble = value.val;
-                  }
-                }
-
-                elements.push({
-                  name: key as string,
-                  elements: [
+                  elements.push([
                     {name: 'age', value: {vDouble: 1}},
                     {name: 'error', value: {vUint64: '0'}},
                     {name: 'value', value: valueObj},
-                  ],
-                });
+                  ]);
+                }
               }
               // send it to the VDC
               this._sendComplexState(msg.messageId, elements);
