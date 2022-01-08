@@ -249,10 +249,14 @@ export class DSBusinessLogic {
                     'debug',
                     'names in channelState request was full -> normal processing'
                   );
-                  if (typeof value.val == 'boolean') {
-                    valueObj.vBool = value.val;
-                  } else if (typeof value.val == 'number') {
-                    valueObj.vDouble = value.val;
+                  if (value) {
+                    if (typeof value.val == 'boolean') {
+                      valueObj.vBool = value.val;
+                    } else if (typeof value.val == 'number') {
+                      valueObj.vDouble = value.val;
+                    }
+                  } else {
+                    valueObj.vBool = false;
                   }
 
                   elements.push({
