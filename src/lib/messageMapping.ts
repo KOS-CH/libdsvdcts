@@ -289,6 +289,8 @@ export const globalHelper: Array<globalHelperItem> = [
   },
   {name: 'blink', type: 'vBool'},
   {name: 'dontcare', type: 'vBool'},
+  {name: 'ignoreLocalPriority', type: 'vBool'},
+  {name: 'effect', type: 'vUint64'},
   {name: 'identification', type: 'vBool'},
   {name: 'outmode', type: 'vBool'},
   {name: 'outputchannels', type: 'vBool'},

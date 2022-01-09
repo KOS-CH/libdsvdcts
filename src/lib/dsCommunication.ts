@@ -106,10 +106,15 @@ export function _vdcResponseGetProperty(
           p.elements.forEach((s: any) => {
             // loop all scenes and add the dontCare value
             // TODO maybe add more values
-            if (device && device.scenes && device.scenes[s.name]) {
+            if (device && device.scenes) {
+              const scene = device.scenes.find((ss: any) => {
+                return ss.sceneId == s.name;
+              });
               // scene found -> add it to the response
               const cdObj = {
-                dontCare: device.scenes[s.name].dontCare,
+                dontCare: scene.dontCare,
+                ignoreLocalPriority: scene.ignoreLocalPriority,
+                effect: scene.effect,
               };
               const subElements = createSubElements(cdObj);
 
