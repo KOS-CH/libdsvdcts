@@ -113,9 +113,10 @@ export function _vdcResponseGetProperty(
               if (scene) {
                 // scene found -> add it to the response
                 const cdObj = {
-                  dontCare: scene.values.dontCare,
-                  ignoreLocalPriority: scene.values.ignoreLocalPriority,
-                  effect: scene.values.effect,
+                  dontCare: scene.values.dontCare.toString(),
+                  ignoreLocalPriority:
+                    scene.values.ignoreLocalPriority.toString(),
+                  effect: scene.values.effect.toString(),
                 };
                 console.log('ANSWER SCENE OBJECT: ' + JSON.stringify(cdObj));
                 const subElements = createSubElements(cdObj);
