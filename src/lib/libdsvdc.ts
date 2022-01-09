@@ -184,7 +184,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                 });
               } else if (
                 decodedMessage.vdsmRequestSetProperty.properties[0].name ==
-                'scene'
+                'scenes'
               ) {
                 // we have a scene update. this usually means that the scene ignore part is changed -> lets update / create the scene
                 decodedMessage.vdsmRequestSetProperty.properties[0].elements.forEach(
@@ -215,6 +215,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                           device.name
                         } ::: ${JSON.stringify(this.devices)}`
                       );
+                      this.emitObject('updateDeviceValues', device);
                     }
                   }
                 );
