@@ -328,7 +328,7 @@ export class DSBusinessLogic {
 
             // check first if ignore flag is set
 
-            if (!storedScene.dontCare) {
+            if (!storedScene.values.dontCare) {
               let key: any;
               let value: any;
               this.events.log(
