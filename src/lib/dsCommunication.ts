@@ -110,18 +110,20 @@ export function _vdcResponseGetProperty(
               const scene = device.scenes.find((ss: any) => {
                 return ss.sceneId == s.name;
               });
-              // scene found -> add it to the response
-              const cdObj = {
-                dontCare: scene.dontCare,
-                ignoreLocalPriority: scene.ignoreLocalPriority,
-                effect: scene.effect,
-              };
-              const subElements = createSubElements(cdObj);
+              if (scene) {
+                // scene found -> add it to the response
+                const cdObj = {
+                  dontCare: scene.dontCare,
+                  ignoreLocalPriority: scene.ignoreLocalPriority,
+                  effect: scene.effect,
+                };
+                const subElements = createSubElements(cdObj);
 
-              biElements.push({
-                name: s.name,
-                elements: subElements,
-              });
+                biElements.push({
+                  name: s.name,
+                  elements: subElements,
+                });
+              }
             }
           });
           properties.push({
