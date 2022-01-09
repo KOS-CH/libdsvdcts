@@ -182,6 +182,41 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                   request: decodedMessage.vdsmRequestSetProperty,
                   devices: this.devices,
                 });
+              } else if (
+                decodedMessage.vdsmRequestSetProperty.properties[0].name ==
+                'scene'
+              ) {
+                // we have a scene update. this usually means that the scene ignore part is changed -> lets update / create the scene
+                decodedMessage.vdsmRequestSetProperty.properties[0].elements.forEach(
+                  (el: any) => {
+                    // loop all scenes to update
+                    if (device && device.scenes) {
+                      let sceneVals: any = {};
+                      if (device.scenes[el.name]) {
+                        // scene already exists
+                        sceneVals = device.scenes[el.name].values;
+                      }
+                      el.elements.forEach((se: any) => {
+                        sceneVals[se.name] = se.value;
+                      });
+
+                      // delete the current scene first
+                      device.scenes = device.scenes.filter(
+                        (d: any) => d.sceneId != el.name
+                      );
+                      device.scenes.push({
+                        sceneId: el.name,
+                        values: sceneVals,
+                      });
+                      console.log(
+                        'debug',
+                        `Set scene ${el.name} on ${
+                          device.name
+                        } ::: ${JSON.stringify(this.devices)}`
+                      );
+                    }
+                  }
+                );
               } else {
                 if (this.debug)
                   console.log('DEVICE BEFORE UPDATE', JSON.stringify(device));
