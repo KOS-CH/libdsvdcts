@@ -101,6 +101,29 @@ export function _vdcResponseGetProperty(
     ) {
       decodedMessage.vdsmRequestGetProperty.query.forEach((p: any) => {
         if (this.debug) console.log('Query', p);
+        if (p.name == 'scenes') {
+          const biElements: any = [];
+          p.elements.forEach((s: any) => {
+            // loop all scenes and add the dontCare value
+            // TODO maybe add more values
+            if (device && device.scenes && device.scenes[s.name]) {
+              // scene found -> add it to the response
+              const cdObj = {
+                dontCare: device.scenes[s.name].dontCare,
+              };
+              const subElements = createSubElements(cdObj);
+
+              biElements.push({
+                name: s.name,
+                elements: subElements,
+              });
+            }
+          });
+          properties.push({
+            name: p.name,
+            elements: biElements,
+          });
+        }
         if (p.name == 'outputSettings') {
           // outputSettings
           let elements: any = [];
