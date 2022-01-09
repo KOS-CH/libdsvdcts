@@ -325,43 +325,52 @@ export class DSBusinessLogic {
           });
           if (storedScene) {
             // we found a stored scene -> execute it
-            let key: any;
-            let value: any;
-            this.events.log(
-              'debug',
-              `looping the values inside scene ${msg.scene} -> ${JSON.stringify(
-                storedScene
-              )}`
-            );
-            for ([key, value] of Object.entries(storedScene.values)) {
+
+            // check first if ignore flag is set
+
+            if (
+              !storedScene.dontCare &&
+              storedScene.dontCare &&
+              !storedScene.dontCare.vBool
+            ) {
+              let key: any;
+              let value: any;
               this.events.log(
                 'debug',
-                `performing update on state: ${key} ${JSON.stringify(
-                  affectedDevice.watchStateIDs
-                )} with key ${key} value ${value.value}`
+                `looping the values inside scene ${
+                  msg.scene
+                } -> ${JSON.stringify(storedScene)}`
               );
-              // if (key == "switch") value.value = true; // set power state on
-              this.events.log(
-                'debug',
-                `setting ${value.value} of ${affectedDevice.name} to on ${affectedDevice.watchStateIDs[key]}`
-              );
-              this.events.emitSetState(
-                affectedDevice.watchStateIDs[key],
-                value.value,
-                false,
-                (error: any) => {
-                  if (error) {
-                    this.events.log(
-                      'error',
-                      `Failed to set ${
-                        affectedDevice.watchStateIDs[key]
-                      } on device ${JSON.stringify(affectedDevice)} to value ${
-                        value.value
-                      } with error ${error}`
-                    );
+              for ([key, value] of Object.entries(storedScene.values)) {
+                this.events.log(
+                  'debug',
+                  `performing update on state: ${key} ${JSON.stringify(
+                    affectedDevice.watchStateIDs
+                  )} with key ${key} value ${value.value}`
+                );
+                // if (key == "switch") value.value = true; // set power state on
+                this.events.log(
+                  'debug',
+                  `setting ${value.value} of ${affectedDevice.name} to on ${affectedDevice.watchStateIDs[key]}`
+                );
+                this.events.emitSetState(
+                  affectedDevice.watchStateIDs[key],
+                  value.value,
+                  false,
+                  (error: any) => {
+                    if (error) {
+                      this.events.log(
+                        'error',
+                        `Failed to set ${
+                          affectedDevice.watchStateIDs[key]
+                        } on device ${JSON.stringify(
+                          affectedDevice
+                        )} to value ${value.value} with error ${error}`
+                      );
+                    }
                   }
-                }
-              );
+                );
+              }
             }
           } else {
             // no stored scene found -> executing poweroff if the scene matches some predefined values
