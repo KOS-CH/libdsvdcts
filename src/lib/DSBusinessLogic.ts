@@ -240,6 +240,10 @@ export class DSBusinessLogic {
               for ([key, value] of Object.entries(stateObj)) {
                 // loop all states
                 let valueObj: {[key: string]: any} = {};
+                if (!value) {
+                  value = {};
+                  value.val = false;
+                }
                 this.events.log(
                   'debug',
                   `channelState value detection: ${typeof value.val}`
@@ -249,14 +253,11 @@ export class DSBusinessLogic {
                     'debug',
                     'names in channelState request was full -> normal processing'
                   );
-                  if (value) {
-                    if (typeof value.val == 'boolean') {
-                      valueObj.vBool = value.val;
-                    } else if (typeof value.val == 'number') {
-                      valueObj.vDouble = value.val;
-                    }
-                  } else {
-                    valueObj.vBool = false;
+
+                  if (typeof value.val == 'boolean') {
+                    valueObj.vBool = value.val;
+                  } else if (typeof value.val == 'number') {
+                    valueObj.vDouble = value.val;
                   }
 
                   elements.push({
