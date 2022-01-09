@@ -197,7 +197,8 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                         sceneVals = device.scenes[el.name].values;
                       }
                       el.elements.forEach((se: any) => {
-                        sceneVals[se.name] = se.value;
+                        const val = se.value[Object.keys(se.value)[0]];
+                        sceneVals[se.name] = val;
                       });
 
                       // delete the current scene first
