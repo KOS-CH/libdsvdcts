@@ -112,11 +112,16 @@ export function _vdcResponseGetProperty(
               });
               if (scene) {
                 // scene found -> add it to the response
+                let dontCare = scene.values.dontCare ? '1' : '0';
+
+                let ignoreLocalPriority = scene.values.ignoreLocalPriority
+                  ? '1'
+                  : '0';
+
                 const cdObj = {
-                  dontCare: scene.values.dontCare.toString(),
-                  ignoreLocalPriority:
-                    scene.values.ignoreLocalPriority.toString(),
-                  effect: scene.values.effect.toString(),
+                  dontCare: dontCare,
+                  ignoreLocalPriority: ignoreLocalPriority,
+                  effect: scene.values.effect,
                 };
                 console.log('ANSWER SCENE OBJECT: ' + JSON.stringify(cdObj));
                 const subElements = createSubElements(cdObj);
