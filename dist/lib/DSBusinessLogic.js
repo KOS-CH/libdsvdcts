@@ -1,7 +1,17 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DSBusinessLogic = void 0;
 const messageMapping_1 = require("./messageMapping");
+const rgbhelper_1 = require("rgbhelper");
 class DSBusinessLogic {
     constructor(config) {
         this.events = config.events;
@@ -21,23 +31,7 @@ class DSBusinessLogic {
         if (msg && msg.dSUID) {
             const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
             this.events.log('debug', `found device ${JSON.stringify(affectedDevice)}`);
-            if (affectedDevice) {
-                const inputStates = [];
-                affectedDevice.binaryInputDescriptions.forEach((i) => {
-                    inputStates.push({
-                        name: i.objName,
-                        age: 1,
-                        value: null,
-                    });
-                });
-                this._sendBinaryInputState(inputStates, msg.messageId);
-            }
-        }
-    }
-    sensorStatesRequest(msg) {
-        if (msg && msg.dSUID) {
-            const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
-            if (affectedDevice) {
+            if (affectedDevice && affectedDevice.binaryInputDescriptions) {
                 const getStates = [];
                 let key;
                 let value;
@@ -48,27 +42,80 @@ class DSBusinessLogic {
                 }
                 if (getStates && getStates.length > 0) {
                     const handleCallback = (stateObj) => {
-                        if (stateObj) {
-                            const sensorStates = [];
-                            let key;
-                            let state;
-                            for ([key, state] of Object.entries(stateObj)) {
-                                this.events.log('debug', 'msg value from state: ' + JSON.stringify(state));
-                                if (affectedDevice.modifiers &&
-                                    typeof affectedDevice.modifiers == 'object' &&
-                                    key &&
-                                    affectedDevice.modifiers[key]) {
-                                    state.val =
-                                        state.val *
-                                            parseFloat(affectedDevice.modifiers[key]);
+                        try {
+                            if (stateObj) {
+                                const inputStates = [];
+                                let key;
+                                let state;
+                                for ([key, state] of Object.entries(stateObj)) {
+                                    this.events.log('debug', 'msg value from state: ' + JSON.stringify(state));
+                                    if (state) {
+                                        inputStates.push({
+                                            name: key,
+                                            age: 1,
+                                            value: state.val,
+                                        });
+                                    }
+                                    else {
+                                        inputStates.push({
+                                            name: key,
+                                            age: 1,
+                                            value: false,
+                                        });
+                                    }
                                 }
-                                sensorStates.push({
-                                    name: key,
-                                    age: 1,
-                                    value: state.val,
-                                });
+                                this._sendBinaryInputState(inputStates, msg.messageId);
                             }
-                            this._sendSensorStatesRequest(sensorStates, msg.messageId);
+                        }
+                        catch (err) {
+                            this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`);
+                        }
+                    };
+                    this.events.emitGetState(getStates, handleCallback.bind(this));
+                }
+            }
+        }
+    }
+    sensorStatesRequest(msg) {
+        if (msg && msg.dSUID) {
+            const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
+            if (affectedDevice && affectedDevice.sensorDescription) {
+                const getStates = [];
+                let key;
+                let value;
+                for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
+                    let stateObj = {};
+                    stateObj[key] = value;
+                    getStates.push(stateObj);
+                }
+                if (getStates && getStates.length > 0) {
+                    const handleCallback = (stateObj) => {
+                        try {
+                            if (stateObj) {
+                                const sensorStates = [];
+                                let key;
+                                let state;
+                                for ([key, state] of Object.entries(stateObj)) {
+                                    this.events.log('debug', 'msg value from state: ' + JSON.stringify(state));
+                                    if (affectedDevice.modifiers &&
+                                        typeof affectedDevice.modifiers == 'object' &&
+                                        key &&
+                                        affectedDevice.modifiers[key]) {
+                                        state.val =
+                                            state.val *
+                                                parseFloat(affectedDevice.modifiers[key]);
+                                    }
+                                    sensorStates.push({
+                                        name: key,
+                                        age: 1,
+                                        value: state.val,
+                                    });
+                                }
+                                this._sendSensorStatesRequest(sensorStates, msg.messageId);
+                            }
+                        }
+                        catch (err) {
+                            this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`);
                         }
                     };
                     this.events.emitGetState(getStates, handleCallback.bind(this));
@@ -77,13 +124,14 @@ class DSBusinessLogic {
         }
     }
     channelStatesRequest(msg) {
-        this.events.log('debug', `received request for status ${JSON.stringify(msg)}`);
+        this.events.log('debug', `received request for channelState ${JSON.stringify(msg)}`);
         if (msg && msg.dSUID) {
             const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase());
             this.events.log('debug', 'FOUND DEVICE: ' + JSON.stringify(affectedDevice));
             if (affectedDevice) {
                 const getStates = [];
                 if (msg && msg.names && msg.names.length > 0) {
+                    this.events.log('debug', `get channelStates with names: ${JSON.stringify(msg.names)}`);
                     msg.names.forEach((e) => {
                         const updateStateId = Object.keys(affectedDevice.watchStateIDs).find(key => affectedDevice.watchStateIDs[key] === e);
                         if (updateStateId) {
@@ -94,6 +142,7 @@ class DSBusinessLogic {
                     });
                 }
                 else {
+                    this.events.log('debug', `names was empty in the channelstate request: affectedDevice ${JSON.stringify(affectedDevice)}`);
                     let key;
                     let value;
                     for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
@@ -104,46 +153,231 @@ class DSBusinessLogic {
                 }
                 if (getStates && getStates.length > 0) {
                     const handleCallback = (stateObj) => {
-                        if (stateObj) {
-                            this.events.log('debug', JSON.stringify(stateObj));
-                            const elements = [];
-                            let key;
-                            let value;
-                            for ([key, value] of Object.entries(stateObj)) {
-                                let valueObj = {};
-                                this.events.log('debug', `channelState value detection: ${typeof value.val}`);
-                                if (typeof value.val == 'boolean') {
-                                    valueObj.vBool = value.val;
+                        try {
+                            if (stateObj) {
+                                this.events.log('debug', `channelStates stateObj: ${JSON.stringify(stateObj)}`);
+                                let elements = [];
+                                let key;
+                                let value;
+                                for ([key, value] of Object.entries(stateObj)) {
+                                    let valueObj = {};
+                                    if (!value) {
+                                        value = {};
+                                        value.val = false;
+                                    }
+                                    this.events.log('debug', `channelState value detection: ${typeof value.val}`);
+                                    if (msg && msg.names && msg.names.length > 0) {
+                                        this.events.log('debug', 'names in channelState request was full -> normal processing');
+                                        if (typeof value.val == 'boolean') {
+                                            valueObj.vBool = value.val;
+                                        }
+                                        else if (typeof value.val == 'number') {
+                                            valueObj.vDouble = value.val;
+                                        }
+                                        elements.push({
+                                            name: key,
+                                            elements: [
+                                                { name: 'age', value: { vDouble: 1 } },
+                                                { name: 'error', value: { vUint64: '0' } },
+                                                { name: 'value', value: valueObj },
+                                            ],
+                                        });
+                                    }
+                                    else {
+                                        this.events.log('debug', 'names in channelState request was empty -> breakout for flat elements array');
+                                        if (value.val) {
+                                            value.val = 100;
+                                        }
+                                        else {
+                                            value.val = 0;
+                                        }
+                                        const subElements = (0, messageMapping_1.createSubElements)({
+                                            0: { age: 1, value: value.val },
+                                        });
+                                        elements = subElements;
+                                        this.events.log('debug', `empty names channelstate: ${JSON.stringify(elements)}`);
+                                    }
                                 }
-                                else if (typeof value.val == 'number') {
-                                    valueObj.vDouble = value.val;
-                                }
-                                elements.push({
-                                    name: key,
-                                    elements: [
-                                        { name: 'age', value: { vDouble: 1 } },
-                                        { name: 'error', value: { vUint64: '0' } },
-                                        { name: 'value', value: valueObj },
-                                    ],
-                                });
+                                this._sendComplexState(msg.messageId, elements);
                             }
-                            this._sendComplexState(msg.messageId, elements);
+                        }
+                        catch (err) {
+                            this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`);
                         }
                     };
                     this.events.emitGetState(getStates, handleCallback.bind(this));
                 }
             }
+            else {
+            }
         }
     }
-    vdsmNotificationCallScene() { }
-    vdsmNotificationSaveScene() { }
+    vdsmNotificationCallScene(msg) {
+        this.events.log('debug', `received call scene event ${JSON.stringify(msg)}`);
+        if (msg && msg.dSUID) {
+            msg.dSUID.forEach((id) => {
+                const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == id.toLowerCase());
+                if (affectedDevice && affectedDevice.scenes) {
+                    const storedScene = affectedDevice.scenes.find((s) => {
+                        return s.sceneId == msg.scene;
+                    });
+                    if (storedScene) {
+                        if (!storedScene.values.dontCare) {
+                            let key;
+                            let value;
+                            this.events.log('debug', `looping the values inside scene ${msg.scene} -> ${JSON.stringify(storedScene)}`);
+                            for ([key, value] of Object.entries(storedScene.values)) {
+                                this.events.log('debug', `performing update on state: ${key} ${JSON.stringify(affectedDevice.watchStateIDs)} with key ${key} value ${value.value}`);
+                                this.events.log('debug', `setting ${value.value} of ${affectedDevice.name} to on ${affectedDevice.watchStateIDs[key]}`);
+                                this.events.emitSetState(affectedDevice.watchStateIDs[key], value.value, false, (error) => {
+                                    if (error) {
+                                        this.events.log('error', `Failed to set ${affectedDevice.watchStateIDs[key]} on device ${JSON.stringify(affectedDevice)} to value ${value.value} with error ${error}`);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    else {
+                        const switchState = affectedDevice.watchStateIDs['switch'];
+                        this.events.log('debug', `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState}`);
+                        if (switchState) {
+                            this._performDefaultScenesSet(msg, switchState, affectedDevice);
+                        }
+                        else {
+                            this.events.log('debug', `no switch state found in ${JSON.stringify(affectedDevice)} for scene ${msg.scene}`);
+                        }
+                    }
+                }
+                else if (affectedDevice) {
+                    const switchState = affectedDevice.watchStateIDs['switch'];
+                    if (switchState)
+                        this._performDefaultScenesSet(msg, switchState, affectedDevice);
+                }
+            });
+        }
+    }
+    _performDefaultScenesSet(msg, switchState, affectedDevice) {
+        switch (msg.scene) {
+            case 0:
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 13:
+                this.events.log('debug', `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching minium scene 13`);
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 14:
+                this.events.log('debug', `no stored scene found -> executing some default sets - scene: ${msg.scene} switchState: ${switchState} - matching maximum scene 14`);
+                this.events.emitSetState(switchState, true, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 32:
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 34:
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 36:
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 38:
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 72:
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+            case 69:
+                this.events.emitSetState(switchState, false, false, (error) => {
+                    if (error) {
+                        this.events.log('error', `Failed to set ${switchState} on device ${JSON.stringify(affectedDevice)} to false with error ${error}`);
+                    }
+                });
+                break;
+        }
+    }
+    vdsmNotificationSaveScene(msg) {
+        this.events.log('debug', `received save scene event ${JSON.stringify(msg)}`);
+        if (msg && msg.dSUID) {
+            msg.dSUID.forEach((id) => __awaiter(this, void 0, void 0, function* () {
+                const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == id.toLowerCase());
+                if (affectedDevice) {
+                    const getStates = [];
+                    let key;
+                    let value;
+                    for ([key, value] of Object.entries(affectedDevice.watchStateIDs)) {
+                        let stateObj = {};
+                        stateObj[key] = value;
+                        getStates.push(stateObj);
+                    }
+                    if (getStates && getStates.length > 0) {
+                        const handleCallback = (stateObj) => {
+                            try {
+                                if (stateObj) {
+                                    const sceneVals = {};
+                                    const sensorStates = [];
+                                    let key;
+                                    let state;
+                                    for ([key, state] of Object.entries(stateObj)) {
+                                        this.events.log('debug', 'msg value from state: ' + JSON.stringify(state));
+                                        const dC = false;
+                                        sceneVals[key] = { value: state.val, dontCare: dC };
+                                    }
+                                    affectedDevice.scenes = affectedDevice.scenes.filter((d) => d.sceneId != msg.scene);
+                                    affectedDevice.scenes.push({
+                                        sceneId: msg.scene,
+                                        values: sceneVals,
+                                    });
+                                    this.events.log('debug', `Set scene ${msg.scene} on ${affectedDevice.name} ::: ${JSON.stringify(this.devices)}`);
+                                    this.events.emitObject('updateDeviceValues', affectedDevice);
+                                }
+                            }
+                            catch (err) {
+                                this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`);
+                            }
+                        };
+                        this.events.emitGetState(getStates, handleCallback.bind(this));
+                    }
+                }
+            }));
+        }
+    }
     vdsmNotificationSetOutputChannelValue(msg) {
         this.events.log('debug', `received OUTPUTCHANNELVALUE value ${JSON.stringify(msg)}`);
         if (msg && msg.dSUID) {
             msg.dSUID.forEach((id) => {
-                const affectedDevice = this.devices.find((d) => d.dsConfig.dSUID.toLowerCase() == id.toLowerCase());
+                const affectedDevice = this.devices.find((d) => d.dSUID.toLowerCase() == id.toLowerCase());
                 if (affectedDevice) {
-                    const affectedState = affectedDevice.watchStateID[msg.channelId];
+                    const affectedState = affectedDevice.watchStateIDs[msg.channelId];
                     if (affectedState) {
                         let myOutputChannelBuffer = this.outputChannelBuffer.find(b => b.dSUID == msg.dSUID);
                         if (!myOutputChannelBuffer) {
@@ -169,11 +403,33 @@ class DSBusinessLogic {
                                 const brightness = myOutputChannelBuffer.buffer.find(b => b.name == 'brightness');
                                 if (sat && hue && brightness) {
                                     this.events.log('debug', `Hue: ${hue.value} Saturation: ${sat.value} Brightness: ${brightness.value}`);
-                                    const rgb = rgbhelper.hsvTOrgb(hue.value, sat.value, brightness.value);
-                                    const rgbHex = rgbhelper.rgbTOhex(rgb);
+                                    const rgb = rgbhelper_1.rgbhelper.hsvTOrgb(hue.value, sat.value, brightness.value);
+                                    const rgbHex = rgbhelper_1.rgbhelper.rgbTOhex(rgb);
                                     this.events.log('debug', `Calculated rgb in hex: ${rgbHex}`);
+                                    const rgbState = affectedDevice.watchStateIDs['rgb'];
+                                    this.events.emitSetState(rgbState, rgbHex, false, (error) => {
+                                        if (error) {
+                                            this.events.log('error', `Failed to set ${rgbState} on device ${JSON.stringify(affectedDevice)} to value ${rgbHex} with error ${error}`);
+                                        }
+                                    });
+                                    myOutputChannelBuffer.buffer =
+                                        myOutputChannelBuffer.buffer.filter(function (obj) {
+                                            return (obj.name !== 'brightness' &&
+                                                obj.name !== 'hue' &&
+                                                obj.name != 'saturation');
+                                        });
                                 }
                             }
+                            myOutputChannelBuffer.buffer.forEach((b) => {
+                                this.events.emitSetState(b.state, b.value, false, (error) => {
+                                    if (error) {
+                                        this.events.log('error', `Failed to set ${b.state} on device ${JSON.stringify(affectedDevice)} to value ${b.value} with error ${error}`);
+                                    }
+                                });
+                            });
+                            this.outputChannelBuffer = this.outputChannelBuffer.filter(function (obj) {
+                                return obj.dSUID !== msg.dSUID;
+                            });
                         }
                     }
                 }

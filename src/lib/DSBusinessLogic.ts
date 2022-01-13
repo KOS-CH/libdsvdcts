@@ -78,30 +78,34 @@ export class DSBusinessLogic {
         if (getStates && getStates.length > 0) {
           // we have some states to process
           const handleCallback = (stateObj: any) => {
-            if (stateObj) {
-              const inputStates: Array<any> = [];
-              let key: string;
-              let state: any;
-              for ([key, state] of Object.entries(stateObj)) {
-                this.events.log(
-                  'debug',
-                  'msg value from state: ' + JSON.stringify(state)
-                );
-                if (state) {
-                  inputStates.push({
-                    name: key as string,
-                    age: 1,
-                    value: state.val,
-                  });
-                } else {
-                  inputStates.push({
-                    name: key as string,
-                    age: 1,
-                    value: false,
-                  });
+            try {
+              if (stateObj) {
+                const inputStates: Array<any> = [];
+                let key: string;
+                let state: any;
+                for ([key, state] of Object.entries(stateObj)) {
+                  this.events.log(
+                      'debug',
+                      'msg value from state: ' + JSON.stringify(state)
+                  );
+                  if (state) {
+                    inputStates.push({
+                      name: key as string,
+                      age: 1,
+                      value: state.val,
+                    });
+                  } else {
+                    inputStates.push({
+                      name: key as string,
+                      age: 1,
+                      value: false,
+                    });
+                  }
                 }
+                this._sendBinaryInputState(inputStates, msg.messageId);
               }
-              this._sendBinaryInputState(inputStates, msg.messageId);
+            } catch (err: any) {
+              this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`)
             }
           };
           this.events.emitGetState(getStates, handleCallback.bind(this));
@@ -131,34 +135,38 @@ export class DSBusinessLogic {
         if (getStates && getStates.length > 0) {
           // we have some states to process
           const handleCallback = (stateObj: any) => {
-            if (stateObj) {
-              const sensorStates: Array<any> = [];
-              let key: string;
-              let state: any;
-              for ([key, state] of Object.entries(stateObj)) {
-                this.events.log(
-                  'debug',
-                  'msg value from state: ' + JSON.stringify(state)
-                );
+            try {
+              if (stateObj) {
+                const sensorStates: Array<any> = [];
+                let key: string;
+                let state: any;
+                for ([key, state] of Object.entries(stateObj)) {
+                  this.events.log(
+                      'debug',
+                      'msg value from state: ' + JSON.stringify(state)
+                  );
 
-                if (
-                  affectedDevice.modifiers &&
-                  typeof affectedDevice.modifiers == 'object' &&
-                  key &&
-                  affectedDevice.modifiers[key as string]
-                ) {
-                  state.val =
-                    (state.val as number) *
-                    parseFloat(affectedDevice.modifiers[key as string]);
+                  if (
+                      affectedDevice.modifiers &&
+                      typeof affectedDevice.modifiers == 'object' &&
+                      key &&
+                      affectedDevice.modifiers[key as string]
+                  ) {
+                    state.val =
+                        (state.val as number) *
+                        parseFloat(affectedDevice.modifiers[key as string]);
+                  }
+
+                  sensorStates.push({
+                    name: key as string,
+                    age: 1,
+                    value: state.val,
+                  });
                 }
-
-                sensorStates.push({
-                  name: key as string,
-                  age: 1,
-                  value: state.val,
-                });
+                this._sendSensorStatesRequest(sensorStates, msg.messageId);
               }
-              this._sendSensorStatesRequest(sensorStates, msg.messageId);
+            } catch (err: any) {
+              this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`)
             }
           };
           this.events.emitGetState(getStates, handleCallback.bind(this));
@@ -228,76 +236,80 @@ export class DSBusinessLogic {
         if (getStates && getStates.length > 0) {
           // we have some states to process
           const handleCallback = (stateObj: any) => {
-            if (stateObj) {
-              // we have a reply
-              this.events.log(
-                'debug',
-                `channelStates stateObj: ${JSON.stringify(stateObj)}`
-              );
-              let elements: Array<any> = [];
-              let key;
-              let value: any;
-              for ([key, value] of Object.entries(stateObj)) {
-                // loop all states
-                let valueObj: {[key: string]: any} = {};
-                if (!value) {
-                  value = {};
-                  value.val = false;
-                }
+            try {
+              if (stateObj) {
+                // we have a reply
                 this.events.log(
-                  'debug',
-                  `channelState value detection: ${typeof value.val}`
+                    'debug',
+                    `channelStates stateObj: ${JSON.stringify(stateObj)}`
                 );
-                if (msg && msg.names && msg.names.length > 0) {
-                  this.events.log(
-                    'debug',
-                    'names in channelState request was full -> normal processing'
-                  );
-
-                  if (typeof value.val == 'boolean') {
-                    valueObj.vBool = value.val;
-                  } else if (typeof value.val == 'number') {
-                    valueObj.vDouble = value.val;
+                let elements: Array<any> = [];
+                let key;
+                let value: any;
+                for ([key, value] of Object.entries(stateObj)) {
+                  // loop all states
+                  let valueObj: { [key: string]: any } = {};
+                  if (!value) {
+                    value = {};
+                    value.val = false;
                   }
-
-                  elements.push({
-                    name: key as string,
-                    elements: [
-                      {name: 'age', value: {vDouble: 1}},
-                      {name: 'error', value: {vUint64: '0'}},
-                      {name: 'value', value: valueObj},
-                    ],
-                  });
-                } else {
-                  // names was an empty array -> we cannot return named elements
                   this.events.log(
-                    'debug',
-                    'names in channelState request was empty -> breakout for flat elements array'
+                      'debug',
+                      `channelState value detection: ${typeof value.val}`
                   );
-                  if (value.val) {
-                    // switch is set to true -> the value is 100
-                    value.val = 100;
+                  if (msg && msg.names && msg.names.length > 0) {
+                    this.events.log(
+                        'debug',
+                        'names in channelState request was full -> normal processing'
+                    );
+
+                    if (typeof value.val == 'boolean') {
+                      valueObj.vBool = value.val;
+                    } else if (typeof value.val == 'number') {
+                      valueObj.vDouble = value.val;
+                    }
+
+                    elements.push({
+                      name: key as string,
+                      elements: [
+                        {name: 'age', value: {vDouble: 1}},
+                        {name: 'error', value: {vUint64: '0'}},
+                        {name: 'value', value: valueObj},
+                      ],
+                    });
                   } else {
-                    // switch is set to false -> the value is 0
-                    value.val = 0;
+                    // names was an empty array -> we cannot return named elements
+                    this.events.log(
+                        'debug',
+                        'names in channelState request was empty -> breakout for flat elements array'
+                    );
+                    if (value.val) {
+                      // switch is set to true -> the value is 100
+                      value.val = 100;
+                    } else {
+                      // switch is set to false -> the value is 0
+                      value.val = 0;
+                    }
+
+                    const subElements = createSubElements({
+                      0: {age: 1, value: value.val},
+                    });
+                    /*elements.push({name: 'age', value: {vDouble: 1}});
+                    elements.push({name: 'error', value: {vUint64: '0'}});
+                    elements.push({name: 'value', value: valueObj});*/
+                    elements = subElements;
+
+                    this.events.log(
+                        'debug',
+                        `empty names channelstate: ${JSON.stringify(elements)}`
+                    );
                   }
-
-                  const subElements = createSubElements({
-                    0: {age: 1, value: value.val},
-                  });
-                  /*elements.push({name: 'age', value: {vDouble: 1}});
-                  elements.push({name: 'error', value: {vUint64: '0'}});
-                  elements.push({name: 'value', value: valueObj});*/
-                  elements = subElements;
-
-                  this.events.log(
-                    'debug',
-                    `empty names channelstate: ${JSON.stringify(elements)}`
-                  );
                 }
+                // send it to the VDC
+                this._sendComplexState(msg.messageId, elements);
               }
-              // send it to the VDC
-              this._sendComplexState(msg.messageId, elements);
+            } catch (err: any) {
+              this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`)
             }
           };
           this.events.emitGetState(getStates, handleCallback.bind(this));
@@ -563,37 +575,41 @@ export class DSBusinessLogic {
 
           if (getStates && getStates.length > 0) {
             const handleCallback = (stateObj: any) => {
-              if (stateObj) {
-                // we have some return values -> store them into the scene object
-                const sceneVals: any = {};
-                const sensorStates: Array<any> = [];
-                let key: string;
-                let state: any;
-                for ([key, state] of Object.entries(stateObj)) {
-                  this.events.log(
-                    'debug',
-                    'msg value from state: ' + JSON.stringify(state)
+              try {
+                if (stateObj) {
+                  // we have some return values -> store them into the scene object
+                  const sceneVals: any = {};
+                  const sensorStates: Array<any> = [];
+                  let key: string;
+                  let state: any;
+                  for ([key, state] of Object.entries(stateObj)) {
+                    this.events.log(
+                        'debug',
+                        'msg value from state: ' + JSON.stringify(state)
+                    );
+                    const dC = false;
+                    sceneVals[key] = {value: state.val, dontCare: dC}; // TODO understand and make it dynamic
+                  }
+                  // delete the current scene first
+                  affectedDevice.scenes = affectedDevice.scenes.filter(
+                      (d: any) => d.sceneId != msg.scene
                   );
-                  const dC = false;
-                  sceneVals[key] = {value: state.val, dontCare: dC}; // TODO understand and make it dynamic
+                  affectedDevice.scenes.push({
+                    sceneId: msg.scene,
+                    values: sceneVals,
+                  });
+                  this.events.log(
+                      'debug',
+                      `Set scene ${msg.scene} on ${
+                          affectedDevice.name
+                      } ::: ${JSON.stringify(this.devices)}`
+                  );
+                  // make it persistent by storing it back to the device
+                  this.events.emitObject('updateDeviceValues', affectedDevice);
                 }
-                // delete the current scene first
-                affectedDevice.scenes = affectedDevice.scenes.filter(
-                  (d: any) => d.sceneId != msg.scene
-                );
-                affectedDevice.scenes.push({
-                  sceneId: msg.scene,
-                  values: sceneVals,
-                });
-                this.events.log(
-                  'debug',
-                  `Set scene ${msg.scene} on ${
-                    affectedDevice.name
-                  } ::: ${JSON.stringify(this.devices)}`
-                );
-                // make it persistent by storing it back to the device
-                this.events.emitObject('updateDeviceValues', affectedDevice);
-              }
+              } catch (err: any) {
+              this.events.log('warn', `there was an issue retrieving your state(s) ${JSON.stringify(getStates)} on device ${affectedDevice}: failed with error ${err}`)
+            }
             };
             this.events.emitGetState(getStates, handleCallback.bind(this));
           }

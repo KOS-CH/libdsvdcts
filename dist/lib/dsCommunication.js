@@ -86,8 +86,40 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
             decodedMessage.vdsmRequestGetProperty.query.forEach((p) => {
                 if (this.debug)
                     console.log('Query', p);
+                if (p.name == 'scenes') {
+                    const biElements = [];
+                    p.elements.forEach((s) => {
+                        if (device && device.scenes) {
+                            const scene = device.scenes.find((ss) => {
+                                return ss.sceneId == s.name;
+                            });
+                            if (scene) {
+                                let dontCare = scene.values.dontCare ? '1' : '0';
+                                let ignoreLocalPriority = scene.values.ignoreLocalPriority
+                                    ? '1'
+                                    : '0';
+                                const cdObj = {
+                                    dontCare: dontCare,
+                                    ignoreLocalPriority: ignoreLocalPriority,
+                                    effect: scene.values.effect,
+                                };
+                                console.log('ANSWER SCENE OBJECT: ' + JSON.stringify(cdObj));
+                                const subElements = (0, messageMapping_1.createSubElements)(cdObj);
+                                biElements.push({
+                                    name: s.name,
+                                    elements: subElements,
+                                });
+                            }
+                        }
+                    });
+                    properties.push({
+                        name: p.name,
+                        elements: biElements,
+                    });
+                }
                 if (p.name == 'outputSettings') {
                     let elements = [];
+                    const biElements = [];
                     if (device.outputSettings) {
                         device.outputSettings.forEach((desc) => {
                             var _a;
@@ -126,12 +158,16 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                     }
                                 }
                             }
+                            biElements.push({
+                                name: desc.objName,
+                                elements: elements,
+                            });
                         });
                     }
-                    if (elements.length > 0) {
+                    if (biElements.length > 0) {
                         properties.push({
                             name: 'outputSettings',
-                            elements: elements,
+                            elements: biElements,
                         });
                     }
                     else {
@@ -141,6 +177,7 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                 }
                 else if (p.name == 'outputDescription') {
                     let elements = [];
+                    const biElements = [];
                     if (device.outputDescription) {
                         device.outputDescription.forEach((desc) => {
                             elements = [];
@@ -159,12 +196,16 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                     }
                                 }
                             }
+                            biElements.push({
+                                name: desc.objName,
+                                elements: elements,
+                            });
                         });
                     }
-                    if (elements.length > 0) {
+                    if (biElements.length > 0) {
                         properties.push({
                             name: 'outputDescription',
-                            elements: elements,
+                            elements: biElements,
                         });
                     }
                     else {
@@ -534,7 +575,7 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                 else if (p.name == 'channelStates') {
                     const messageNames = [];
                     p.elements.forEach((el) => {
-                        if (device.channelDescription[0][el.name]) {
+                        if (device.channelDescriptions[0][el.name]) {
                             messageNames.push(el.name);
                         }
                     });
