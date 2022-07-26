@@ -101,9 +101,47 @@ export function _vdcResponseGetProperty(
     ) {
       decodedMessage.vdsmRequestGetProperty.query.forEach((p: any) => {
         if (this.debug) console.log('Query', p);
+        if (p.name == 'scenes') {
+          const biElements: any = [];
+          p.elements.forEach((s: any) => {
+            // loop all scenes and add the dontCare value
+            // TODO maybe add more values
+            if (device && device.scenes) {
+              const scene = device.scenes.find((ss: any) => {
+                return ss.sceneId == s.name;
+              });
+              if (scene) {
+                // scene found -> add it to the response
+                let dontCare = scene.values.dontCare ? '1' : '0';
+
+                let ignoreLocalPriority = scene.values.ignoreLocalPriority
+                  ? '1'
+                  : '0';
+
+                const cdObj = {
+                  dontCare: dontCare,
+                  ignoreLocalPriority: ignoreLocalPriority,
+                  effect: scene.values.effect,
+                };
+                console.log('ANSWER SCENE OBJECT: ' + JSON.stringify(cdObj));
+                const subElements = createSubElements(cdObj);
+
+                biElements.push({
+                  name: s.name,
+                  elements: subElements,
+                });
+              }
+            }
+          });
+          properties.push({
+            name: p.name,
+            elements: biElements,
+          });
+        }
         if (p.name == 'outputSettings') {
           // outputSettings
           let elements: any = [];
+          const biElements: any = [];
           if (device.outputSettings) {
             device.outputSettings.forEach(
               (desc: {[key: string]: string; value: any}) => {
@@ -151,13 +189,17 @@ export function _vdcResponseGetProperty(
                     }
                   }
                 }
+                biElements.push({
+                  name: desc.objName,
+                  elements: elements,
+                });
               }
             );
           }
-          if (elements.length > 0) {
+          if (biElements.length > 0) {
             properties.push({
               name: 'outputSettings',
-              elements: elements,
+              elements: biElements,
             });
           } else {
             // commented, because p44 does not send it
@@ -170,6 +212,7 @@ export function _vdcResponseGetProperty(
         } else if (p.name == 'outputDescription') {
           // outputDescription
           let elements: any = [];
+          const biElements: any = [];
           if (device.outputDescription) {
             device.outputDescription.forEach(
               (desc: {[key: string]: string; value: any}) => {
@@ -193,13 +236,17 @@ export function _vdcResponseGetProperty(
                     }
                   }
                 }
+                biElements.push({
+                  name: desc.objName,
+                  elements: elements,
+                });
               }
             );
           }
-          if (elements.length > 0) {
+          if (biElements.length > 0) {
             properties.push({
               name: 'outputDescription',
-              elements: elements,
+              elements: biElements,
             });
           } else {
             // commented, because p44 does not send it
@@ -608,7 +655,8 @@ export function _vdcResponseGetProperty(
           // loop all indexes
           const messageNames: any = [];
           p.elements.forEach((el: any) => {
-            if (device.channelDescription[0][el.name]) {
+            // if (el.name === '0') el.name == 'brightness';
+            if (device.channelDescriptions[0][el.name]) {
               // channel described -> emit query to get state
               messageNames.push(el.name);
             }

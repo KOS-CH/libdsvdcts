@@ -182,6 +182,43 @@ export class libdsvdc extends DSEventEmitter implements VDC {
                   request: decodedMessage.vdsmRequestSetProperty,
                   devices: this.devices,
                 });
+              } else if (
+                decodedMessage.vdsmRequestSetProperty.properties[0].name ==
+                'scenes'
+              ) {
+                // we have a scene update. this usually means that the scene ignore part is changed -> lets update / create the scene
+                decodedMessage.vdsmRequestSetProperty.properties[0].elements.forEach(
+                  (el: any) => {
+                    // loop all scenes to update
+                    if (device && device.scenes) {
+                      let sceneVals: any = {};
+                      if (device.scenes[el.name]) {
+                        // scene already exists
+                        sceneVals = device.scenes[el.name].values;
+                      }
+                      el.elements.forEach((se: any) => {
+                        const val = se.value[Object.keys(se.value)[0]];
+                        sceneVals[se.name] = val.toString();
+                      });
+
+                      // delete the current scene first
+                      device.scenes = device.scenes.filter(
+                        (d: any) => d.sceneId != el.name
+                      );
+                      device.scenes.push({
+                        sceneId: el.name,
+                        values: sceneVals,
+                      });
+                      console.log(
+                        'debug',
+                        `Set scene ${el.name} on ${
+                          device.name
+                        } ::: ${JSON.stringify(this.devices)}`
+                      );
+                      this.emitObject('updateDeviceValues', device);
+                    }
+                  }
+                );
               } else {
                 if (this.debug)
                   console.log('DEVICE BEFORE UPDATE', JSON.stringify(device));
@@ -308,7 +345,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
       });
     };
 
-    new DSBusinessLogic({events: this, devices: this.devices});
+    new DSBusinessLogic({events: this, devices: this.devices, vdsm: this.vdsm});
 
     const server = net.createServer();
     server.on('connection', handleConnection);

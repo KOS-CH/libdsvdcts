@@ -1,7 +1,11 @@
 import {EventEmitter} from 'events';
 
 export class DSEventEmitter extends EventEmitter {
-  emitGetState(event: string, id: string, callback: Function) {
+  emitGetState(
+    id: string | Array<{[key: string]: string}>,
+    callback: Function
+  ) {
+    const event: string = 'getIOBState';
     this.emit(event, id, callback);
   }
 
@@ -12,5 +16,9 @@ export class DSEventEmitter extends EventEmitter {
 
   emitObject(event: string, obj = {}) {
     this.emit(event, obj);
+  }
+
+  log(type: 'silly' | 'debug' | 'info' | 'warn' | 'error', msg: string) {
+    this.emit('vdcLog', type, msg);
   }
 }
