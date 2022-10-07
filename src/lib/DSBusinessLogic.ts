@@ -114,7 +114,9 @@ export class DSBusinessLogic {
     }
   }
 
-  private sensorStatesRequest(msg: any) {
+  private sensorStatesRequest() {}
+
+ /* (msg: any) {
     if (msg && msg.dSUID) {
       const affectedDevice = this.devices.find(
         (d: any) => d.dSUID.toLowerCase() == msg.dSUID.toLowerCase()
@@ -173,7 +175,7 @@ export class DSBusinessLogic {
         }
       }
     }
-  }
+  }*/
 
   /**
    * channelState request are used by Digitalstrom to query for the current state. It requires an answer to be sent over the VDC
@@ -618,7 +620,10 @@ export class DSBusinessLogic {
     }
   }
 
-  private vdsmNotificationSetOutputChannelValue(msg: any) {
+  private vdsmNotificationSetOutputChannelValue() {}
+/*
+  (msg: any) {
+
     this.events.log(
       'debug',
       `received OUTPUTCHANNELVALUE value ${JSON.stringify(msg)}`
@@ -740,7 +745,7 @@ export class DSBusinessLogic {
         }
       });
     }
-  }
+  }*/
 
   /**
    * ControlValues are sent by DS on a regular bases including temperature within the zone & outside temperature / brightness. When editing an outputchannel direclty in the hardware tab control values are being used to set the values
