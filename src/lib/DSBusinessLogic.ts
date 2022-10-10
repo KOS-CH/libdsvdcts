@@ -25,7 +25,9 @@ export class DSBusinessLogic {
       'binaryInputStateRequest',
       this.binaryInputStateRequest.bind(this)
     );
-    this.events.on('sensorStatesRequest', this.sensorStatesRequest.bind(this));
+    this.events.on(
+        'sensorStatesRequest',
+        this.sensorStatesRequest.bind(this));
     this.events.on(
       'VDSM_NOTIFICATION_SET_CONTROL_VALUE',
       this.vdsmNotificationSetControlValue.bind(this)
@@ -48,7 +50,9 @@ export class DSBusinessLogic {
     );
   }
 
-  private binaryInputStateRequest(msg: any) {
+  private binaryInputStateRequest() {}
+
+/*(msg: any) {
     this.events.log(
       'debug',
       `received request for binaryInputStateRequest ${JSON.stringify(msg)}`
@@ -112,7 +116,7 @@ export class DSBusinessLogic {
         }
       }
     }
-  }
+  }*/
 
   private sensorStatesRequest() {}
 
@@ -182,7 +186,9 @@ export class DSBusinessLogic {
    * @param msg
    * @private
    */
-  private channelStatesRequest(msg: any) {
+  private channelStatesRequest() {}
+ /*
+  (msg: any) {
     this.events.log(
       'debug',
       `received request for channelState ${JSON.stringify(msg)}`
@@ -296,9 +302,9 @@ export class DSBusinessLogic {
                     const subElements = createSubElements({
                       0: {age: 1, value: value.val},
                     });
-                    /*elements.push({name: 'age', value: {vDouble: 1}});
+                    /!*elements.push({name: 'age', value: {vDouble: 1}});
                     elements.push({name: 'error', value: {vUint64: '0'}});
-                    elements.push({name: 'value', value: valueObj});*/
+                    elements.push({name: 'value', value: valueObj});*!/
                     elements = subElements;
 
                     this.events.log(
@@ -320,9 +326,13 @@ export class DSBusinessLogic {
         // send back empty state
       }
     }
-  }
+  }*/
 
-  private vdsmNotificationCallScene(msg: any) {
+  private vdsmNotificationCallScene() {}
+
+/*
+
+(msg: any) {
     this.events.log(
       'debug',
       `received call scene event ${JSON.stringify(msg)}`
@@ -411,6 +421,7 @@ export class DSBusinessLogic {
       });
     }
   }
+*/
 
   /**
    * Digitalstrom has some default scenes (actually many of them). This function takes care of some of them (the most important ones)
@@ -553,7 +564,11 @@ export class DSBusinessLogic {
     }
   }
 
-  private vdsmNotificationSaveScene(msg: any) {
+  private vdsmNotificationSaveScene() {}
+/*
+  (msg: any) {
+
+
     this.events.log(
       'debug',
       `received save scene event ${JSON.stringify(msg)}`
@@ -618,7 +633,7 @@ export class DSBusinessLogic {
         }
       });
     }
-  }
+  }*/
 
   private vdsmNotificationSetOutputChannelValue() {}
 /*
@@ -752,7 +767,9 @@ export class DSBusinessLogic {
    * @param msg
    * @private
    */
-  private vdsmNotificationSetControlValue(msg: any) {
+  private vdsmNotificationSetControlValue() {}
+  /*
+  (msg: any) {
     this.events.log('debug', 'CONTROLVALUE RECEIVED ' + JSON.stringify(msg));
     if (msg && msg.name) {
       if (msg && msg.dSUID) {
@@ -820,7 +837,7 @@ export class DSBusinessLogic {
         });
       }
     }
-  }
+  }*/
 
   private _sendComplexState(messageId: number, rawSubElements: any) {
     const properties = [];
