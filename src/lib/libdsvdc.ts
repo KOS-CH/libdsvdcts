@@ -17,7 +17,7 @@ import {
 } from './dsCommunication';
 
 import {createSubElements} from './messageMapping';
-import {DSBusinessLogic} from './DSBusinessLogic';
+//import {DSBusinessLogic} from './DSBusinessLogic';
 
 interface VDC {
   start(config: dsVDCConfig, devices: any): Promise<dsVDCStart>;
@@ -345,7 +345,7 @@ export class libdsvdc extends DSEventEmitter implements VDC {
       });
     };
 
-    new DSBusinessLogic({events: this, devices: this.devices, vdsm: this.vdsm});
+    //new DSBusinessLogic({events: this, devices: this.devices, vdsm: this.vdsm});
 
     const server = net.createServer();
     server.on('connection', handleConnection);
