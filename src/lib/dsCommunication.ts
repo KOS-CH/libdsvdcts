@@ -141,7 +141,7 @@ export function _vdcResponseGetProperty(
         if (p.name == 'outputSettings') {
           // outputSettings
           let elements: any = [];
-          const biElements: any = [];
+          //const biElements: any = [];
           if (device.outputSettings) {
             device.outputSettings.forEach(
               (desc: {[key: string]: string; value: any}) => {
@@ -189,17 +189,17 @@ export function _vdcResponseGetProperty(
                     }
                   }
                 }
-                biElements.push({
+     /*           biElements.push({
                   name: desc.objName,
                   elements: elements,
-                });
+                });*/
               }
             );
           }
-          if (biElements.length > 0) {
+          if (elements.length > 0) {
             properties.push({
               name: 'outputSettings',
-              elements: biElements,
+              elements: elements,
             });
           } else {
             // commented, because p44 does not send it
@@ -212,7 +212,7 @@ export function _vdcResponseGetProperty(
         } else if (p.name == 'outputDescription') {
           // outputDescription
           let elements: any = [];
-          const biElements: any = [];
+          //const biElements: any = [];
           if (device.outputDescription) {
             device.outputDescription.forEach(
               (desc: {[key: string]: string; value: any}) => {
@@ -236,17 +236,17 @@ export function _vdcResponseGetProperty(
                     }
                   }
                 }
-                biElements.push({
+              /*  biElements.push({
                   name: desc.objName,
                   elements: elements,
-                });
+                });*/
               }
             );
           }
-          if (biElements.length > 0) {
+          if (elements.length > 0) {
             properties.push({
               name: 'outputDescription',
-              elements: biElements,
+              elements: elements,
             });
           } else {
             // commented, because p44 does not send it

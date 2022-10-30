@@ -119,7 +119,6 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                 }
                 if (p.name == 'outputSettings') {
                     let elements = [];
-                    const biElements = [];
                     if (device.outputSettings) {
                         device.outputSettings.forEach((desc) => {
                             var _a;
@@ -158,16 +157,12 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                     }
                                 }
                             }
-                            biElements.push({
-                                name: desc.objName,
-                                elements: elements,
-                            });
                         });
                     }
-                    if (biElements.length > 0) {
+                    if (elements.length > 0) {
                         properties.push({
                             name: 'outputSettings',
-                            elements: biElements,
+                            elements: elements,
                         });
                     }
                     else {
@@ -177,7 +172,6 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                 }
                 else if (p.name == 'outputDescription') {
                     let elements = [];
-                    const biElements = [];
                     if (device.outputDescription) {
                         device.outputDescription.forEach((desc) => {
                             elements = [];
@@ -196,16 +190,12 @@ function _vdcResponseGetProperty(conn, decodedMessage) {
                                     }
                                 }
                             }
-                            biElements.push({
-                                name: desc.objName,
-                                elements: elements,
-                            });
                         });
                     }
-                    if (biElements.length > 0) {
+                    if (elements.length > 0) {
                         properties.push({
                             name: 'outputDescription',
-                            elements: biElements,
+                            elements: elements,
                         });
                     }
                     else {
